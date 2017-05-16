@@ -227,8 +227,8 @@ class DebugPanel(Widget):
 
 class DalekApp(App):
     count = NumericProperty(0)
-    def __init__(self, **kwargs):
-        super(App, self).__init__(self, **kwargs)
+#    def __init__(self, **kwargs):
+#        super(App, self).__init__(self, **kwargs)
 
 
 if __name__ == '__main__':
