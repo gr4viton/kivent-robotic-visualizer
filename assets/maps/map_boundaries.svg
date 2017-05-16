@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:osb="http://www.openswatchbook.org/uri/2009/osb"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   width="682.66669"
+   height="512"
+   id="svg5084"
+   inkscape:version="0.92.1 r"
+   sodipodi:docname="map_boundaries.svg">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1680"
+     inkscape:window-height="986"
+     id="namedview8"
+     showgrid="false"
+     inkscape:zoom="0.98333341"
+     inkscape:cx="247.34156"
+     inkscape:cy="251.94768"
+     inkscape:window-x="1366"
+     inkscape:window-y="27"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg5084" />
+  <defs
+     id="defs5086">
+    <linearGradient
+       id="linearGradient5218"
+       osb:paint="solid">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop5220" />
+    </linearGradient>
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect2994"
+       is_visible="true" />
+    <inkscape:path-effect
+       effect="spiro"
+       id="path-effect5106"
+       is_visible="true" />
+  </defs>
+  <metadata
+     id="metadata5089">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <rect
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.24318266"
+     id="reg"
+     width="24.569668"
+     height="512"
+     x="0"
+     y="-3.907985e-14"
+     inkscape:label="reg" />
+  <rect
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.48081756"
+     id="reg-36"
+     width="626.21643"
+     height="24.57"
+     x="27.620848"
+     y="3.0517572e-07"
+     inkscape:label="reg" />
+  <rect
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.48081756"
+     id="reg-36-5"
+     width="626.21643"
+     height="24.57"
+     x="27.621"
+     y="487.42999"
+     inkscape:label="reg" />
+  <rect
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.24318266"
+     id="reg-35"
+     width="24.569668"
+     height="512"
+     x="658.90198"
+     y="0"
+     inkscape:label="reg" />
+</svg>

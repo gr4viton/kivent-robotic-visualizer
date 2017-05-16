@@ -41,11 +41,14 @@ class TestGame(Widget):
         self.setup_states()
         self.set_state()
         self.draw_some_stuff()
+        self.draw_boundaries()
 
     def destroy_created_entity(self, ent_id, dt):
         self.gameworld.remove_entity(ent_id)
         self.app.count -= 1
 
+    def draw_boundaries(self):
+        self.load_svg('../assets/maps/map_boundaries.svg', self.gameworld, True)
 
     def draw_some_stuff(self):
         size = Window.size
@@ -56,7 +59,7 @@ class TestGame(Widget):
         for x in range(100):
             pos = (randint(0, w), randint(0, h))
             ent_id = create_asteroid(pos)
-            #Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
+            Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
         self.app.count += 100
 
         self.load_svg('objects.svg', self.gameworld)
@@ -82,6 +85,7 @@ class TestGame(Widget):
                             'vel_limit': 250,
                             'ang_vel_limit': radians(11200),
                             'mass': 50-40, 'col_shapes': col_shapes}
+
         create_component_dict = {
             'cymunk_physics': physics_component,
             'rotate_renderer': {
@@ -91,6 +95,7 @@ class TestGame(Widget):
                 },
             'position': pos,
             'rotate': 0, }
+
         component_order = ['position', 'rotate', 'rotate_renderer',
             'cymunk_physics',]
         return self.gameworld.init_entity(
@@ -133,21 +138,30 @@ class TestGame(Widget):
         return ret, (xmid, ymid)
 
 
-    def load_svg(self, fname, gameworld):
+    def load_svg(self, fname, gameworld, massless=False):
         mm = gameworld.model_manager
         data = mm.get_model_info_for_svg(fname)
         print('fname', fname)
         print('data', data)
         
+        mass = 50 
+        if massless:
+            mass = float('inf')
+            mass = float(0)
+            av = float('inf')
 
         for info in data['model_info']:
             
-            pos = (randint(0, 200), randint(0, 200))
-            info, pos = self.normalize_info(info)
 
+            if massless:
+                info, pos = self.normalize_info(info)
+            else:
+                pos = (randint(0, 200), randint(0, 200))
             Logger.debug("adding object with title/element_id=%s/%s and desc=%s",
                          info.title, info.element_id, info.description)
             model_name = mm.load_model_from_model_info(info, data['svg_name'])
+                
+    #        print( str(dir.x) for x in dir(info))
 
             poly_shape = {
                 'shape_type': 'poly',
@@ -155,7 +169,7 @@ class TestGame(Widget):
                 'collision_type': 1,
                 'friction': 1.0,
                 'shape_info': {
-                    'mass': 50,
+                    'mass': mass,
                     'offset': (0, 0),
                     'vertices': info.path_vertices
                 }
@@ -167,9 +181,9 @@ class TestGame(Widget):
                     'velocity': (0, 0),
                     'position': pos,
                     'angle': 0,
-                    'angular_velocity': radians(100),
+                    'angular_velocity': radians(0),
                     'ang_vel_limit': radians(0),
-                    'mass': 50, 
+                    'mass': mass, 
                     'col_shapes': [poly_shape]
             }
 
@@ -213,6 +227,8 @@ class DebugPanel(Widget):
 
 class DalekApp(App):
     count = NumericProperty(0)
+    def __init__(self, **kwargs):
+        super(App, self).__init__(self, **kwargs)
 
 
 if __name__ == '__main__':
