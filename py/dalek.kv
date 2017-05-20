@@ -84,7 +84,8 @@ TestGame:
     spacing: 2
     pos: root.pos
 #    size: root.size
-    size_hint: 1, None
+    size: root.size
+#    size_hint: 1, 1
     canvas.before:
         Color:
             rgba: self.bg_color
@@ -102,16 +103,11 @@ TestGame:
         min_move: 5
         do_scroll_x: 0
         StackLayout:
-            size_hint_y: None
-
-            Button:
-                text: 'Draw some stuff'
-                on_release: app.root.draw_some_stuff()
             
-            Label:
-                text: 'he'
+   #         Label:
+    #            text: 'he'
 
-            DebugPanel       
+#            DebugPanel       
 
             InfoPanel
         #    TitledPanel:
@@ -120,18 +116,33 @@ TestGame:
 
 <ROTextInput@TextInput>:
     readonly: True
+ #   size_hint: 1, 1 
+ #   size_hint_y: 0.1
 
 <InfoPanel@ColoredGridLayout>:
     cols: 1
-    DebugPanel
+
+    Button:
+        text: 'Draw some stuff'
+        on_release: app.root.draw_some_stuff()
 
     TitledText:
         title: 'Objects count'
         text: str(app.count)
+
     TitledText:
         title: 'Info'
         text: str(app.count)
  
+    DebugPanel
+
+#    TitledText
+#    TitledText
+#    TitledText
+#    TitledText
+#    TitledText
+#    TitledText
+
 <TitledText@ColoredGridLayout>:
     text: 'text'
     title: 'title'
