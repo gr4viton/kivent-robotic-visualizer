@@ -245,6 +245,7 @@ class DebugPanel(Widget):
 
 class DalekApp(App):
     count = NumericProperty(0)
+    info_text = StringProperty('...')
     #def __init__(self, **kwargs):
      #   super(App, self).__init__(**kwargs)
       #  return 
