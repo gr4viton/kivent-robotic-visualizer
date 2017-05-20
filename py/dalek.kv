@@ -72,25 +72,81 @@ TestGame:
 <MainScreen@GameScreen>:
     name: 'main'
     FloatLayout:
-        Button:
-            text: 'Draw Some Stuff'
-            size_hint: (.2, .1)
-            pos_hint: {'x': .025, 'y': .025}
-            on_release: app.root.draw_some_stuff()
-        DebugPanel:
-            size_hint: (.2, .1)
-            pos_hint: {'x': .225, 'y': .025}
-        Label:
-            text: str(app.count)
-            size_hint: (.2, .1)
-            font_size: 24
-            pos_hint: {'x': .425, 'y': .025}
+        ControlPanel:
+            cols:1
+            size_hint: (.2, 1)
+            pos_hint: {'x': 0.8, 'y': 0}
+
+<ColoredGridLayout@GridLayout>:
+    bg_color: .1, .1, .7, .3
+#    margin: 3
+    padding: 3, 3, 3, 3
+    spacing: 2
+    pos: root.pos
+#    size: root.size
+    size_hint: 1, None
+    canvas.before:
+        Color:
+            rgba: self.bg_color
+            #rgba: .1, .6, .6, .5 if self.Color is None else self.Color
+            #rgba: .1, .6, .6, .5 if self.bg_color is None else self.bg_color
+        Rectangle:
+            pos: self.pos
+            size: self.size
+#            pos: (self.pos[0] - self.margin, self.pos[1] - self.margin)
+ #           size: (self.size[0] + 2 * self.margin, self.size[1] + 2 * self.margin)
+
+<ControlPanel@ColoredGridLayout>:
+ #   bg_color: .1, .1, .7, .5
+    ScrollView: 
+        min_move: 5
+        do_scroll_x: 0
+        StackLayout:
+            size_hint_y: None
+
+            Button:
+                text: 'Draw some stuff'
+                on_release: app.root.draw_some_stuff()
+            
+            Label:
+                text: 'he'
+
+            DebugPanel       
+
+            InfoPanel
+        #    TitledPanel:
+        #        Label:
+        #            text: 'contents'
+
+<ROTextInput@TextInput>:
+    readonly: True
+
+<InfoPanel@ColoredGridLayout>:
+    cols: 1
+    DebugPanel
+
+    TitledText:
+        title: 'Objects count'
+        text: str(app.count)
+    TitledText:
+        title: 'Info'
+        text: str(app.count)
+ 
+<TitledText@ColoredGridLayout>:
+    text: 'text'
+    title: 'title'
+    cols: 1
+    Label:
+        text: root.title
+    ROTextInput:
+        text: root.text
+ 
 
 <DebugPanel>:
     Label:
         pos: root.pos
         size: root.size
-        font_size: root.size[1]*.5
+        #font_size: root.size[1]*.5
         halign: 'center'
         valign: 'middle'
         color: (1,1,1,1)

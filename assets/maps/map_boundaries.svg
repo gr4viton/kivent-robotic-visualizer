@@ -30,8 +30,8 @@
      id="namedview8"
      showgrid="false"
      inkscape:zoom="0.98333341"
-     inkscape:cx="247.34156"
-     inkscape:cy="251.94768"
+     inkscape:cx="512.76527"
+     inkscape:cy="199.06633"
      inkscape:window-x="1366"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -63,40 +63,40 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
   <rect
-     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.24318266"
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.2627418"
      id="reg"
-     width="24.569668"
+     width="25"
      height="512"
      x="0"
      y="-3.907985e-14"
      inkscape:label="reg" />
   <rect
-     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.48081756"
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.50000024"
      id="reg-36"
-     width="626.21643"
-     height="24.57"
-     x="27.620848"
-     y="3.0517572e-07"
+     width="625"
+     height="25"
+     x="27"
+     y="0"
      inkscape:label="reg" />
   <rect
-     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.48081756"
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.50000024"
      id="reg-36-5"
-     width="626.21643"
-     height="24.57"
-     x="27.621"
-     y="487.42999"
+     width="625"
+     height="25"
+     x="27"
+     y="487"
      inkscape:label="reg" />
   <rect
-     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.24318266"
-     id="reg-35"
-     width="24.569668"
+     style="fill:#008b00;fill-opacity:1;stroke:none;stroke-width:2.2627418"
+     id="reg-36-3"
+     width="25"
      height="512"
-     x="658.90198"
+     x="654"
      y="0"
      inkscape:label="reg" />
 </svg>

@@ -2,6 +2,7 @@ from kivy.app import App
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
+from kivy.config import Config
 from kivy.core.window import Window
 from random import randint, choice
 from math import radians, pi, sin, cos
@@ -19,6 +20,13 @@ from kivy.properties import StringProperty, NumericProperty
 from functools import partial
 from os.path import dirname, join, abspath
 
+import logging
+
+from logging import info as prinf
+from logging import debug as prind
+from logging import warning as prinw
+from logging import error as prine
+
 
 texture_manager.load_atlas(
         join(dirname(dirname(abspath(__file__))), 'assets', 
@@ -31,6 +39,7 @@ print(join(dirname(dirname(abspath(__file__))), 'assets', 'glsl'))
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
+
         self.gameworld.init_gameworld(
             ['cymunk_physics', 'poly_renderer', 'rotate_poly_renderer', 
                 'rotate_renderer', 
@@ -40,6 +49,9 @@ class TestGame(Widget):
     def init_game(self):
         self.setup_states()
         self.set_state()
+        self.init_physicals()
+
+    def init_physicals(self):
         self.draw_some_stuff()
         self.draw_boundaries()
 
@@ -48,7 +60,10 @@ class TestGame(Widget):
         self.app.count -= 1
 
     def draw_boundaries(self):
-        self.load_svg('../assets/maps/map_boundaries.svg', self.gameworld, True)
+
+        #self.load_svg('../assets/maps/map_boundaries.svg', self.gameworld, True)
+        w, h = size = Window.size
+        prinw(size)
 
     def draw_some_stuff(self):
         size = Window.size
@@ -63,6 +78,9 @@ class TestGame(Widget):
         self.app.count += 100
 
         self.load_svg('objects.svg', self.gameworld)
+
+    def create_boundaries(self):
+        pass
 
     def create_asteroid(self, pos):
         x_vel = randint(-15, 15)
@@ -148,15 +166,15 @@ class TestGame(Widget):
         if massless:
             mass = float('inf')
             mass = float(0)
-            av = float('inf')
+            #av = float('inf')
 
         for info in data['model_info']:
             
 
-            if massless:
-                info, pos = self.normalize_info(info)
-            else:
+            info, pos = self.normalize_info(info)
+            if not massless:
                 pos = (randint(0, 200), randint(0, 200))
+
             Logger.debug("adding object with title/element_id=%s/%s and desc=%s",
                          info.title, info.element_id, info.description)
             model_name = mm.load_model_from_model_info(info, data['svg_name'])
@@ -227,8 +245,29 @@ class DebugPanel(Widget):
 
 class DalekApp(App):
     count = NumericProperty(0)
-#    def __init__(self, **kwargs):
-#        super(App, self).__init__(self, **kwargs)
+    #def __init__(self, **kwargs):
+     #   super(App, self).__init__(**kwargs)
+      #  return 
+    def build(self):
+        # root.bind(size=self._update_rect, pos=self._update_rect)
+        h = 700
+        w = 1300
+        #Config.set('kivy', 'show_fps', 1)
+        #Config.set('kivy', 'desktop', 1)
+
+        Config.set('graphics', 'window_state', 'maximized')
+        Config.set('graphics', 'position', 'custom')
+        Config.set('graphics', 'height', h)
+        Config.set('graphics', 'width', w)
+        Config.set('graphics', 'top', 15)
+        Config.set('graphics', 'left', 4)
+        #Config.set('graphics', 'multisamples', 0) # to correct bug from kivy 1.9.1 - https://github.com/kivy/kivy/issues/3576
+
+        # Config.set('graphics', 'fullscreen', 'fake')
+        # Config.set('graphics', 'fullscreen', 1)
+
+        self.root = TestGame()
+        return self.root
 
 
 if __name__ == '__main__':
