@@ -4,7 +4,8 @@ from kivy.uix.widget import Widget
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.core.window import Window
-from random import randint, choice
+import random as rnd
+from random import randint, choice, randrange
 from math import radians, pi, sin, cos
 import kivent_core
 import kivent_cymunk
@@ -35,6 +36,15 @@ from logging import error as prine
 import svgwrite as svg
 from svgwrite import cm, mm
 import json
+import inspect
+
+from collections.abc import Mapping
+import time
+import os
+#import shutil
+import glob
+
+from robot import Robot
 
 def get_asset_path(asset, asset_loc):
     return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
@@ -50,6 +60,45 @@ texture_manager.load_atlas(get_asset_path('background_objects.atlas','assets'))
 print(join(dirname(dirname(abspath(__file__))), 'assets', 'glsl'))
 
 
+
+class Entities(Mapping):
+    def __init__(self, app, *args, **kw):
+        self._storage = dict(*args, **kw)
+     #   self.ent_count = ent_count
+        self.app = app
+    
+    def __getitem__(self, key):
+        self.update_count()
+        return self._storage[key]
+
+    def __iter__(self):
+        self.update_count()
+        return iter(self._storage)
+
+    def __len__(self):
+        return len(self._storage)
+
+ #   def __delitem__(self, key):
+  #      return self._storage.__delitem__(self, key)
+
+    def add_item(self, key, value):
+        ret = self._storage[key].append(value)
+        self.update_count()
+        return ret 
+
+    def __setitem__(self, key, value):
+        ret = self._storage.__setitem__(key, value)
+        self.update_count()
+        return ret
+
+    def update_count(self):
+        self.app.ent_count = '\n'.join(['{}={}'.format(key, len(val)) for key, val in self._storage.items()])
+
+    def __str__(self):
+        self.update_count()
+        return self._storage.__str__()
+
+
 class TestGame(Widget):
     def __init__(self, **kwargs):
         super(TestGame, self).__init__(**kwargs)
@@ -61,6 +110,7 @@ class TestGame(Widget):
             callback=self.init_game)
 
     def init_game(self):
+
         self.setup_states()
         self.set_state()
         self.init_physicals()
@@ -68,10 +118,42 @@ class TestGame(Widget):
     def info(self, text):
         self.app.info_text += '\n' + str(text)
 
+
+    def clear_maps(self):
+        prinf('Deleting maps in '+ self.__svg_map_dir__)
+ #       shutil.rmtree(self.__svg_map_dir__)
+        files = glob.glob(self.__svg_map_dir__ + '*')
+        for f in files:
+            os.remove(f)
+
     def init_physicals(self):
-        self.draw_some_stuff()
+#        self._entities = {}
+        self.entities = Entities(self.app)
+
+        self.__svg_map_dir__ = '../assets/maps/svg/'
+        self.clear_maps()
+
         self.draw_walls()
+        #self.draw_some_stuff()
         self.draw_obstacles()
+
+        self.init_robot()
+
+    def init_robot(self):
+
+#        self.r = Robot(pos, siz, drive='mecanum')
+
+        self.create_robot()
+
+#        fname = self.create_robot()
+ #       self.load_svg(fname, self.gameworld)
+
+    def create_robot(self):
+
+        
+        pass
+
+
 
     def draw_walls(self):
         Ww, Wh = Wsize = Window.size
@@ -91,9 +173,31 @@ class TestGame(Widget):
         sizes = [(w0, t), (t, h0+2*t), (w0,t), (t, h0+2*t)]
         poss = [[0, -t], [w0, -t], [0, h0], [-t, -t]]
         poss = [[pos[0] + x0, pos[1] + y0] for pos in poss]
-
+        
         for pos, size in zip(poss, sizes):
             self.create_wall(pos, size, txu)
+
+        
+    def add_entity(self, ent, category='default'):
+
+        if category not in self.entities.keys():
+            self.entities[category] = []
+ #       self.entities[category].append(ent)
+        self.entities.add_item(category, ent)
+    
+#    @property
+ #   def entities(self):
+  #      return self._entities
+
+   # @entities.setter
+    #def entities(self, value):
+     #   self.app.ent_count = '\n'.join(['{}={}'.format(key, len(val)) for key, val in self.entities.items()])
+      #  self._entities = value
+
+    def init_entity(self, component_dict, component_order, category):
+        ent = self.gameworld.init_entity(component_dict, component_order)
+        self.add_entity(ent, category)
+        return ent
 
 
     def create_wall(self, pos_lf, size, txu): 
@@ -133,43 +237,82 @@ class TestGame(Widget):
             }
 
         component_order = ['position', 'rotate', 'rotate_renderer', 'cymunk_physics']
-        ent = self.gameworld.init_entity(create_component_dict, component_order)
         self.wall_id += 1
-        return ent
+        return self.init_entity(create_component_dict, component_order, 'walls')
+
+    def destroy_all_entities(self):
+        self.destroy_entities()
+
+    def destroy_entities(self, cat_list=None, skip_cat_list=None):
+        for ent_cat, ent_list in self.entities.items():
+            delete = False
+            if cat_list is None and skip_cat_list is None:
+                delete = True
+            else:
+                if cat_list is None:
+                    if ent_cat not in skip_cat_list:
+                        delete = True
+                else:
+                    if ent_cat in cat_list:
+                        delete = True
+                
+            if delete:
+                prinf('Clearing entities of ' + ent_cat)
+                for ent in ent_list:
+                    self.destroy_created_entity(ent, 0)
+                self.entities[ent_cat].clear()
+
+
 
     def destroy_created_entity(self, ent_id, dt):
         self.gameworld.remove_entity(ent_id)
-        self.app.count -= 1
 
     def draw_obstacles(self):
-        
-        self.create_boundaries()
-        #self.load_svg('../assets/maps/map_boundaries.svg', self.gameworld, True)
-
-        self.load_svg('map.svg', self.gameworld)
+        fname = self.create_obstacles()
+        self.load_svg(fname, self.gameworld)
 
 
-    def create_boundaries(self):
+    def create_obstacles(self):
         self.color = '#42ACDC'
         self.stroke_color = '#000000'
-        
+        self.path = self.__svg_map_dir__ + 'map{}.svg'
+
         Fw, Fh = self.field_size
         
-        w, h = 100, 100
+        w, h = Fw, Fh
         siz = (str(w), str(h))
         print(siz)
-        self.dwg = svg.Drawing('map.svg', size=siz, baseProfile='full')
+        self.dwg = None
+        fname = self.path.format(time.time())
+        self.dwg = svg.Drawing(fname, size=siz, baseProfile='full', debug=False,)
         
  #       group = self.dwg.add(self.dwg.g(id='obstacles', fill=self.color))
 
+        dens_interval = (900, 1000)
+ #       mass_interval = (1000, 5000)
+        smaller = h if h<=w else w
+        siz_min, siz_max = one_siz_interval = 0.01*smaller, 0.1* smaller
+        siz_interval = [one_siz_interval, one_siz_interval]
 
         for i in range(10):
-            pos = siz = (100,100)
-            mass = (100)
+
+            rnd.seed(time.time())   
+            #pos = siz = (100,100)
+         #   rnd.seed(time.time())
+            siz = [randint(*siz_interval[i]) for i in range(2)]
+
+            pos_lf_interval = ((0, w - siz[0]), (0, h - siz[1]))
+
+            pos = [randint(*pos_lf_interval[i]) + siz[i]/2 for i in range(2)]
+  #          mass = randint(*mass_interval)
+            dens = randrange(*dens_interval)
+            mass = siz[0] * siz[1] * dens/1000
+
             name = 'obstacle' + str(i)
             info_dict = {
                       #  'name': name,
-                        'mass' : mass,
+                        'mass': mass,
+                        'category': 'obstacle'
                     }
             # id is necessary attribut for the kivent svg loader!, also I use it for sharing info about the obstacle
             info_str = json.dumps(info_dict)
@@ -179,16 +322,21 @@ class TestGame(Widget):
             stroke_color = self.stroke_color
             rect = self.dwg.rect(id=id_str, insert=pos, size=siz, 
                     fill=color, stroke=stroke_color,
-                    #title=info_str,
+                    description=info_str,
                     )
-#            _get_args_dict(self.dwg.rect, [], {})
-            
+            if i == 0:
+                print(siz, pos)
+            print('>>>>>>>>>>>>>>>>>>>>>>>>>>>ww')
+#            print(inspect.getfullargspec())
     #        group.add(rect)
         
             self.dwg.add(rect)
 
         self.info('saving: ' + self.dwg.filename)
+
         self.dwg.save()
+        return fname
+        
 
     def draw_asteroids(self):
         size = Window.size
@@ -200,10 +348,13 @@ class TestGame(Widget):
             pos = (randint(0, w), randint(0, h))
             ent_id = create_asteroid(pos)
             Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
-        self.app.count += 100
+ #       self.app.ent_count += 100
 
     def draw_some_stuff(self):
-        self.load_svg('objects.svg', self.gameworld)
+       # rnd.seed(time.time())
+     #   self.load_svg('objects.svg', self.gameworld)
+        #self.load_svg('map.svg', self.gameworld)
+        self.draw_obstacles()
  #       self.load_svg('map.svg', self.gameworld)
 
 
@@ -241,8 +392,9 @@ class TestGame(Widget):
 
         component_order = ['position', 'rotate', 'rotate_renderer',
             'cymunk_physics',]
-        return self.gameworld.init_entity(
-            create_component_dict, component_order)
+
+
+        return self.init_entity(create_component_dict, component_order, 'asteroid')
 
 
     def normalize_info(self, info):
@@ -262,6 +414,9 @@ class TestGame(Widget):
             element_id = 'added_default_element_id'
         else:
             element_id = info.element_id
+
+        element_id += str(time.time())
+
         ret = SVGModelInfo(info.indices,
                        info.vertices.copy(),
                        custom_data=info.custom_data,
@@ -288,39 +443,32 @@ class TestGame(Widget):
     def load_svg(self, fname, gameworld, massless=False):
         mm = gameworld.model_manager
         data = mm.get_model_info_for_svg(fname)
-        print('fname', fname)
-        print('data', data)
-        
-  #      [print(dir(mi)) for mi in data['model_info']]
- #       [print(mi.path_vertices) for mi in data['model_info']]
+
+        print('loading svg:', fname)
         mass = 50 
-        if massless:
-            mass = float('inf')
-            mass = float(0)
-            #av = float('inf')
+        category = fname
 
         for info in data['model_info']:
-            
-            print('>>>>>>>>>>>>>>>>wwww')
- #           print(dir(info))
-            [print('>>>', par, info.__getattribute__(par)) for par in dir(info) if par[0] != '_']
-            print(info)
-            #info.description = 'text'
             info, pos = self.normalize_info(info)
-            if not massless:
-                pos = (randint(0, 200), randint(0, 200))
 
-            print(info)
+            if info.description is not None:
+                info_dict = json.loads(info.description)
+                #print(info_dict)a
+                mass = float(info_dict.get('mass', mass))
+                category = info_dict.get('category', category)
+
+            if massless:
+                mass = float('inf')
+                mass = float(0)
+                #av = float('inf')
 
             Logger.debug("adding object with title/element_id=%s/%s and desc=%s",
                          info.title, info.element_id, info.description)
+            
 
-            print('v')
-            model_name = mm.load_model_from_model_info(info, data['svg_name'])
-                
-    #        print( str(dir.x) for x in dir(info))
+            this_model_name = data['svg_name'] 
+            model_name = mm.load_model_from_model_info(info, this_model_name)
 
-            print('k')
             poly_shape = {
                 'shape_type': 'poly',
                 'elasticity': 0.6,
@@ -353,9 +501,10 @@ class TestGame(Widget):
             }
 
             #ent = gameworld.init_entity(create_dict, ['position', 'rotate', 'poly_renderer', 'cymunk_physics'])
-            ent = gameworld.init_entity(create_dict, ['position', 'rotate',
-                'rotate_poly_renderer', 'cymunk_physics'])
-            self.app.count += 1
+            component_order = ['position', 'rotate', 'rotate_poly_renderer', 'cymunk_physics']
+            self.init_entity(create_dict, component_order, category)
+
+#        mm.unload_models_for_svg(data['svg_name'])   
 
     def update(self, dt):
         self.gameworld.update(dt)
@@ -383,7 +532,7 @@ class DebugPanel(Widget):
         Clock.schedule_once(self.update_fps, .05)
 
 class DalekApp(App):
-    count = NumericProperty(0)
+    ent_count = StringProperty('...')
     info_text = StringProperty('...')
     damping = NumericProperty(0.5)
     #def __init__(self, **kwargs):
@@ -410,6 +559,9 @@ class DalekApp(App):
         Window.clearcolor = (1,1,1,1)
         self.root = TestGame()
         return self.root
+
+    def on_stop(self):
+        self.root.clear_maps()
 
 
 if __name__ == '__main__':

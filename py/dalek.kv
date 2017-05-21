@@ -79,6 +79,7 @@ TestGame:
             zone_to_use: 'touch'
             physics_system: 'cymunk_physics'
             touch_radius: 30
+            max_force: 2500000*10
 
     GameScreenManager:
         id: gamescreenmanager
@@ -136,11 +137,19 @@ TestGame:
         text: 'Draw asteroids'
         on_release: app.root.draw_asteroids()
 
+    Button:
+        text: 'Destroy all stuff'
+        on_release: app.root.destroy_all_entities()
+        
+    Button:
+        text: 'Destroy objects (not map)'
+        on_release: app.root.destroy_entities(skip_cat_list='walls')
+
     DebugPanel
 
     TitledText:
         title: 'Objects count'
-        text: str(app.count)
+        text: str(app.ent_count)
 
     TitledText:
         title: 'Info'
