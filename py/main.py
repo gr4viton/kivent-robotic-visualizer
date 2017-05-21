@@ -105,17 +105,16 @@ class TestGame(Widget):
 #        poss[0] = [x0 + w0/2, y0 + h0/2]
         txu = 'warning'
 
-        for i, (pos, size) in enumerate(zip(poss, sizes)):
-            self.create_wall(pos, size, i, txu)
+        for pos, size in zip(poss, sizes):
+            self.create_wall(pos, size, txu)
 
  #       self.create_wall([290,290], [300,360], 0, txu)
 
 
-    def create_wall(self, pos, size, i, txu): 
+    def create_wall(self, pos, size, txu): 
         w, h = size
         
         model_key = 'wall' + str(self.wall_id)
-        txu = 'warning'
         mm = self.gameworld.model_manager
         mm.load_textured_rectangle('vertex_format_4f', w, h, txu, model_key)
         mass = 0
