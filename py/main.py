@@ -32,11 +32,16 @@ from logging import debug as prind
 from logging import warning as prinw
 from logging import error as prine
 
-
-#atlas_dir = join(dirname(dirname(abspath(__file__))), 'assets') 
+import svgwrite as svg
+from svgwrite import cm, mm
+import json
 
 def get_asset_path(asset, asset_loc):
     return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
+
+def _get_args_dict(fn, args, kwargs):
+    args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+    return {**dict(zip(args_names, args)), **kwargs}
 
 texture_manager.load_atlas(get_asset_path('background_objects.atlas','assets'))
 #texture_manager.load_atlas(get_asset_path('dalek_objects.atlas','assets'))
@@ -65,12 +70,10 @@ class TestGame(Widget):
 
     def init_physicals(self):
         self.draw_some_stuff()
-#        self.draw_boundaries()
+        self.draw_walls()
+        self.draw_obstacles()
 
-        
-        init_entity = self.gameworld.init_entity
-
-
+    def draw_walls(self):
         Ww, Wh = Wsize = Window.size
         prinw(Wsize)
         self.info(Wsize)
@@ -78,51 +81,30 @@ class TestGame(Widget):
         self.wall_id = 0
         # thickness
         t = 125
-        x0, y0 = 30,30 
-        w0, h0 = Ww-2*x0, Wh-2*y0
-        w0, h0 = 800, 800
-        
-        sizes = [#(w0,h0),
-                (w0, t), 
-                (t, h0+2*t),
-                (w0,t),
-                (t, h0+2*t)
-                ]
-
-    #    poss = []
-        poss = [#[0,0],  
-                [0, 0], [w0, 0], [0, h0], [0, 0]]
-        sgn = [#(0,0),
-                (1, -1), (1, 1), (1, 1), (-1, 1)]
-        for i, size in enumerate(sizes):
-            poss[i][0] += x0 + size[0]/2 * sgn[i][0]
-            poss[i][1] += y0 + size[1]/2 * sgn[i][1]
- #       poss = [(x0 + w0/2, y0 - t/2), 
-  #              (x0 + w0 + t/2, y0 + ),
-   #             ]
-        poss[1][1] += -t
-        poss[3][1] += -t
-#        poss[0] = [x0 + w0/2, y0 + h0/2]
         txu = 'warning'
+
+        x0, y0 = 30,30 
+        #w0, h0 = Ww-2*x0, Wh-2*y0
+        w0, h0 = 1000, 800
+        self.field_size = w0, h0
+        
+        sizes = [(w0, t), (t, h0+2*t), (w0,t), (t, h0+2*t)]
+        poss = [[0, -t], [w0, -t], [0, h0], [-t, -t]]
+        poss = [[pos[0] + x0, pos[1] + y0] for pos in poss]
 
         for pos, size in zip(poss, sizes):
             self.create_wall(pos, size, txu)
 
- #       self.create_wall([290,290], [300,360], 0, txu)
 
-
-    def create_wall(self, pos, size, txu): 
+    def create_wall(self, pos_lf, size, txu): 
         w, h = size
-        
+
+        pos = [pos_lf[i] + size[i]/2 for i in range(2)]
         model_key = 'wall' + str(self.wall_id)
-        mm = self.gameworld.model_manager
-        mm.load_textured_rectangle('vertex_format_4f', w, h, txu, model_key)
+        self.gameworld.model_manager.load_textured_rectangle('vertex_format_4f', w, h, txu, model_key)
         mass = 0
 
-        shape_dict = {
-                'width': w, 'height': h,
-                'mass': mass, 
-            }
+        shape_dict = {'width': w, 'height': h, 'mass': mass, }
         col_shape = {
                 'shape_type': 'box', 
                 'elasticity': 1.0,
@@ -150,41 +132,65 @@ class TestGame(Widget):
                 'rotate': 0,
             }
 
-#        create_component_dict = {
- #           'cymunk_physics': physics_component,
-  #          'rotate_renderer': {
-   #             'texture': 'asteroid1',
-    #            'size': (45, 45),
-     #           'render': True
-      #          },
-       #     'position': pos,
-        #    'rotate': 0, }
-
- #       component_order = ['position', 'rotate', 'rotate_renderer',
-  #          'cymunk_physics',]
- #       component_order = ['cymunk_physics', 'renderer', 'position']       
-
-        #ent = self.gameworld.init_entity(create_component_dict, ['position', 'renderer'])
         component_order = ['position', 'rotate', 'rotate_renderer', 'cymunk_physics']
         ent = self.gameworld.init_entity(create_component_dict, component_order)
         self.wall_id += 1
-        return
-
-#        return self.gameworld.init_entity(create_component_dict, component_order)
         return ent
 
     def destroy_created_entity(self, ent_id, dt):
         self.gameworld.remove_entity(ent_id)
         self.app.count -= 1
 
-    def draw_boundaries(self):
-
-        #self.load_svg('../assets/maps/map_boundaries.svg', self.gameworld, True)
-        w, h = size = Window.size
+    def draw_obstacles(self):
         
-        create_boundary(pos, size)
+        self.create_boundaries()
+        #self.load_svg('../assets/maps/map_boundaries.svg', self.gameworld, True)
 
-    def draw_some_stuff(self):
+        self.load_svg('map.svg', self.gameworld)
+
+
+    def create_boundaries(self):
+        self.color = '#42ACDC'
+        self.stroke_color = '#000000'
+        
+        Fw, Fh = self.field_size
+        
+        w, h = 100, 100
+        siz = (str(w), str(h))
+        print(siz)
+        self.dwg = svg.Drawing('map.svg', size=siz, baseProfile='full')
+        
+ #       group = self.dwg.add(self.dwg.g(id='obstacles', fill=self.color))
+
+
+        for i in range(10):
+            pos = siz = (100,100)
+            mass = (100)
+            name = 'obstacle' + str(i)
+            info_dict = {
+                      #  'name': name,
+                        'mass' : mass,
+                    }
+            # id is necessary attribut for the kivent svg loader!, also I use it for sharing info about the obstacle
+            info_str = json.dumps(info_dict)
+            desc = name
+            id_str = name
+            color = self.color
+            stroke_color = self.stroke_color
+            rect = self.dwg.rect(id=id_str, insert=pos, size=siz, 
+                    fill=color, stroke=stroke_color,
+                    #title=info_str,
+                    )
+#            _get_args_dict(self.dwg.rect, [], {})
+            
+    #        group.add(rect)
+        
+            self.dwg.add(rect)
+
+        self.info('saving: ' + self.dwg.filename)
+        self.dwg.save()
+
+    def draw_asteroids(self):
         size = Window.size
         w, h = size[0], size[1]
         delete_time = 2.5
@@ -196,15 +202,10 @@ class TestGame(Widget):
             Clock.schedule_once(partial(destroy_ent, ent_id), delete_time)
         self.app.count += 100
 
+    def draw_some_stuff(self):
         self.load_svg('objects.svg', self.gameworld)
+ #       self.load_svg('map.svg', self.gameworld)
 
-    def create_boundary(self, pos, size):
-        shape_dict = {
-                'mass': 0, 'offset': (0,0)
-                }
-
-        pass
-        
 
     def create_asteroid(self, pos):
         x_vel = randint(-15, 15)
@@ -257,11 +258,15 @@ class TestGame(Widget):
         xmid = _median([ x['pos'][0] for x in info.vertices.values()])
         ymid = _median([ x['pos'][1] for x in info.vertices.values()])
 
+        if info.element_id is None:
+            element_id = 'added_default_element_id'
+        else:
+            element_id = info.element_id
         ret = SVGModelInfo(info.indices,
                        info.vertices.copy(),
                        custom_data=info.custom_data,
                        description=info.description,
-                       element_id=info.element_id,
+                       element_id=element_id,
                        title=info.title,
                        path_vertices=info.path_vertices[:]
                        )
@@ -286,6 +291,8 @@ class TestGame(Widget):
         print('fname', fname)
         print('data', data)
         
+  #      [print(dir(mi)) for mi in data['model_info']]
+ #       [print(mi.path_vertices) for mi in data['model_info']]
         mass = 50 
         if massless:
             mass = float('inf')
@@ -294,21 +301,30 @@ class TestGame(Widget):
 
         for info in data['model_info']:
             
-
+            print('>>>>>>>>>>>>>>>>wwww')
+ #           print(dir(info))
+            [print('>>>', par, info.__getattribute__(par)) for par in dir(info) if par[0] != '_']
+            print(info)
+            #info.description = 'text'
             info, pos = self.normalize_info(info)
             if not massless:
                 pos = (randint(0, 200), randint(0, 200))
 
+            print(info)
+
             Logger.debug("adding object with title/element_id=%s/%s and desc=%s",
                          info.title, info.element_id, info.description)
+
+            print('v')
             model_name = mm.load_model_from_model_info(info, data['svg_name'])
                 
     #        print( str(dir.x) for x in dir(info))
 
+            print('k')
             poly_shape = {
                 'shape_type': 'poly',
                 'elasticity': 0.6,
-                'collision_type': 1,
+                'collision_type': 0,
                 'friction': 1.0,
                 'shape_info': {
                     'mass': mass,
@@ -337,7 +353,6 @@ class TestGame(Widget):
             }
 
             #ent = gameworld.init_entity(create_dict, ['position', 'rotate', 'poly_renderer', 'cymunk_physics'])
-
             ent = gameworld.init_entity(create_dict, ['position', 'rotate',
                 'rotate_poly_renderer', 'cymunk_physics'])
             self.app.count += 1
