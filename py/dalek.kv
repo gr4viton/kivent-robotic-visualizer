@@ -8,6 +8,14 @@ TestGame:
 <TestGame>:
     gameworld: gameworld
     app: app
+    
+   # bg_color: 1,1,1,1
+    #canvas.before:
+     #   Color:
+      #      rgba: self.bg_color
+       # Rectangle:
+        #    pos: self.pos
+         #   size: self.size
     GameWorld:
         id: gameworld
         gamescreenmanager: gamescreenmanager
@@ -30,6 +38,18 @@ TestGame:
             zones: ['general']
             shader_source: path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positionrotateshader.glsl')
 
+        Renderer:
+            gameworld: gameworld
+            system_id: 'renderer'
+            zones: ['general']
+            frame_count: 2
+            updateable: True 
+            force_update: True
+ #           size_of_batches: 512
+  #          size_of_component_block: 128
+            shader_source: path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positionshader.glsl')
+
+
         PolyRenderer:
             id: 'poly_renderer'
             system_id: 'poly_renderer'
@@ -37,7 +57,7 @@ TestGame:
             zones: ['general']
             frame_count: 2
             updateable: True
-            shader_source:  'poscolorshader.glsl'
+            shader_source:  path.join(dirname(dirname(path.abspath(main.__file__))), 'assets', 'glsl', 'positioncolorshader.glsl')
 
         RotatePolyRenderer:
             id: 'rotate_poly_renderer'
@@ -50,6 +70,7 @@ TestGame:
 
         CymunkPhysics:
             gameworld: root.gameworld
+            damping: root.app.damping
             zones: ['general']
 
         CymunkTouchSystem:
@@ -111,6 +132,8 @@ TestGame:
         text: 'Draw some stuff'
         on_release: app.root.draw_some_stuff()
 
+    DebugPanel
+
     TitledText:
         title: 'Objects count'
         text: str(app.count)
@@ -119,7 +142,6 @@ TestGame:
         title: 'Info'
         text: str(app.info_text)
  
-    DebugPanel
 
 #    TitledText
 #    TitledText

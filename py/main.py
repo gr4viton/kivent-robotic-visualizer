@@ -11,6 +11,11 @@ import kivent_cymunk
 from kivent_core.gameworld import GameWorld
 from kivent_core.managers.resource_managers import texture_manager
 
+
+from kivent_maps import map_utils
+from kivent_maps.map_system import MapSystem
+
+
 from kivent_core.rendering.svg_loader import SVGModelInfo
 from kivent_core.systems.renderers import RotateRenderer
 from kivent_core.systems.position_systems import PositionSystem2D
@@ -28,10 +33,14 @@ from logging import warning as prinw
 from logging import error as prine
 
 
-texture_manager.load_atlas(
-        join(dirname(dirname(abspath(__file__))), 'assets', 
-        'background_objects.atlas'))
+#atlas_dir = join(dirname(dirname(abspath(__file__))), 'assets') 
 
+def get_asset_path(asset, asset_loc):
+    return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
+
+texture_manager.load_atlas(get_asset_path('background_objects.atlas','assets'))
+#texture_manager.load_atlas(get_asset_path('dalek_objects.atlas','assets'))
+#texture_manager.load_atlas(join(atlas_dir, 'robot_objects.atlas'))
 
 print(join(dirname(dirname(abspath(__file__))), 'assets', 'glsl'))
 
@@ -51,9 +60,119 @@ class TestGame(Widget):
         self.set_state()
         self.init_physicals()
 
+    def info(self, text):
+        self.app.info_text += '\n' + str(text)
+
     def init_physicals(self):
         self.draw_some_stuff()
-        self.draw_boundaries()
+#        self.draw_boundaries()
+
+        
+        init_entity = self.gameworld.init_entity
+
+
+        Ww, Wh = Wsize = Window.size
+        prinw(Wsize)
+        self.info(Wsize)
+        
+        self.wall_id = 0
+        # thickness
+        t = 125
+        x0, y0 = 30,30 
+        w0, h0 = Ww-2*x0, Wh-2*y0
+        w0, h0 = 800, 800
+        
+        sizes = [#(w0,h0),
+                (w0, t), 
+                (t, h0+2*t),
+                (w0,t),
+                (t, h0+2*t)
+                ]
+
+    #    poss = []
+        poss = [#[0,0],  
+                [0, 0], [w0, 0], [0, h0], [0, 0]]
+        sgn = [#(0,0),
+                (1, -1), (1, 1), (1, 1), (-1, 1)]
+        for i, size in enumerate(sizes):
+            poss[i][0] += x0 + size[0]/2 * sgn[i][0]
+            poss[i][1] += y0 + size[1]/2 * sgn[i][1]
+ #       poss = [(x0 + w0/2, y0 - t/2), 
+  #              (x0 + w0 + t/2, y0 + ),
+   #             ]
+        poss[1][1] += -t
+        poss[3][1] += -t
+#        poss[0] = [x0 + w0/2, y0 + h0/2]
+        txu = 'warning'
+
+        for i, (pos, size) in enumerate(zip(poss, sizes)):
+            self.create_wall(pos, size, i, txu)
+
+ #       self.create_wall([290,290], [300,360], 0, txu)
+
+
+    def create_wall(self, pos, size, i, txu): 
+        w, h = size
+        
+        model_key = 'wall' + str(self.wall_id)
+        txu = 'warning'
+        mm = self.gameworld.model_manager
+        mm.load_textured_rectangle('vertex_format_4f', w, h, txu, model_key)
+        mass = 0
+
+        shape_dict = {
+                'width': w, 'height': h,
+                'mass': mass, 
+            }
+        col_shape = {
+                'shape_type': 'box', 
+                'elasticity': 1.0,
+                'collision_type': 0, 
+                'shape_info': shape_dict, 'friction': 1.0
+            }
+        col_shapes = [col_shape]
+        physics_component = {
+                'main_shape': 'box',
+                'velocity': (0, 0),
+                'position': pos, 'angle': 0,
+                'angular_velocity': 0,
+                'vel_limit': 0,
+                'ang_vel_limit': 0,
+                'mass': mass, 'col_shapes': col_shapes
+            }
+
+        create_component_dict = {
+                'cymunk_physics': physics_component,
+                'rotate_renderer': {
+                    'texture': txu,
+                    'model_key': model_key,
+                    },
+                'position': pos,
+                'rotate': 0,
+            }
+
+#        create_component_dict = {
+ #           'cymunk_physics': physics_component,
+  #          'rotate_renderer': {
+   #             'texture': 'asteroid1',
+    #            'size': (45, 45),
+     #           'render': True
+      #          },
+       #     'position': pos,
+        #    'rotate': 0, }
+
+ #       component_order = ['position', 'rotate', 'rotate_renderer',
+  #          'cymunk_physics',]
+ #       component_order = ['cymunk_physics', 'renderer', 'position']       
+
+        #ent = self.gameworld.init_entity(create_component_dict, ['position', 'renderer'])
+        component_order = ['position', 'rotate', 'rotate_renderer', 'cymunk_physics']
+        ent = self.gameworld.init_entity(create_component_dict, component_order)
+        self.wall_id += 1
+        return
+
+#        return self.gameworld.init_entity(create_component_dict, component_order)
+        return ent
 
     def destroy_created_entity(self, ent_id, dt):
         self.gameworld.remove_entity(ent_id)
@@ -63,7 +182,8 @@ class TestGame(Widget):
 
         #self.load_svg('../assets/maps/map_boundaries.svg', self.gameworld, True)
         w, h = size = Window.size
-        prinw(size)
+        
+        create_boundary(pos, size)
 
     def draw_some_stuff(self):
         size = Window.size
@@ -79,8 +199,13 @@ class TestGame(Widget):
 
         self.load_svg('objects.svg', self.gameworld)
 
-    def create_boundaries(self):
+    def create_boundary(self, pos, size):
+        shape_dict = {
+                'mass': 0, 'offset': (0,0)
+                }
+
         pass
+        
 
     def create_asteroid(self, pos):
         x_vel = randint(-15, 15)
@@ -246,6 +371,7 @@ class DebugPanel(Widget):
 class DalekApp(App):
     count = NumericProperty(0)
     info_text = StringProperty('...')
+    damping = NumericProperty(0.5)
     #def __init__(self, **kwargs):
      #   super(App, self).__init__(**kwargs)
       #  return 
@@ -262,11 +388,12 @@ class DalekApp(App):
         Config.set('graphics', 'width', w)
         Config.set('graphics', 'top', 15)
         Config.set('graphics', 'left', 4)
+        #Config.set('graphics',
         #Config.set('graphics', 'multisamples', 0) # to correct bug from kivy 1.9.1 - https://github.com/kivy/kivy/issues/3576
 
         # Config.set('graphics', 'fullscreen', 'fake')
         # Config.set('graphics', 'fullscreen', 1)
-
+        Window.clearcolor = (1,1,1,1)
         self.root = TestGame()
         return self.root
 
