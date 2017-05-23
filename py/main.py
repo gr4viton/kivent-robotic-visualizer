@@ -64,7 +64,7 @@ class Entities(Mapping):
         self._storage = dict(*args, **kw)
      #   self.ent_count = ent_count
         self.app = app
-    
+
     def __getitem__(self, key):
         self.update_count()
         return self._storage[key]
@@ -82,7 +82,7 @@ class Entities(Mapping):
     def add_item(self, key, value):
         ret = self._storage[key].append(value)
         self.update_count()
-        return ret 
+        return ret
 
     def __setitem__(self, key, value):
         ret = self._storage.__setitem__(key, value)
@@ -102,8 +102,8 @@ class TestGame(Widget):
         super(TestGame, self).__init__(**kwargs)
 
         self.gameworld.init_gameworld(
-            ['cymunk_physics', 'poly_renderer', 'rotate_poly_renderer', 
-                'rotate_renderer', 
+            ['cymunk_physics', 'poly_renderer', 'rotate_poly_renderer',
+                'rotate_renderer',
                 'rotate', 'position',  'cymunk_touch' ],
             callback=self.init_game)
 
@@ -130,7 +130,7 @@ class TestGame(Widget):
         self.setup_collision_callbacks()
 
         self.entities = Entities(self.app)
-        
+
         self.map = Map2D(self)
 
         self.asteroids = Asteroids(self)
@@ -157,10 +157,8 @@ class TestGame(Widget):
         cts = self.collision_types
 
         sm = self.gameworld.system_manager
-        self.pprint(dir(sm))
+ #       self.pprint(dir(sm))
  #       systems = self.gameworld.systems
-        
-
 
         self.pprint(sm['cymunk_physics'])
         physics_system = sm['cymunk_physics']
@@ -173,26 +171,28 @@ class TestGame(Widget):
             separate_func=self.begin_ultrasound_miss)
 
 
-    def begin_ultrasound_hit(self, space, arbiter):                                                            
-        ent1_id = arbiter.shapes[0].body.data #puck                                                                   
-        ent2_id = arbiter.shapes[1].body.data #airhole                                                                
-        self.info('ultrasound detection')
-        return False                                                                                                  
+    def begin_ultrasound_hit(self, space, arbiter):
+        ent0_id = arbiter.shapes[0].body.data #detectable_object
+        ent1_id = arbiter.shapes[1].body.data #ultrasound
+        us_name = self.r.ultrasound_hit(ent1_id, ent0_id)
+        self.info('ultrasound detection: ' + us_name)
+        return False
 
-    def begin_ultrasound_miss(self, space, arbiter):                                                            
-        ent1_id = arbiter.shapes[0].body.data #puck                            
-        ent2_id = arbiter.shapes[1].body.data #airhole                         
-        self.info('ultrasound detection end')
-        return False                                                           
+    def begin_ultrasound_miss(self, space, arbiter):
+        ent0_id = arbiter.shapes[0].body.data #detectable_object
+        ent1_id = arbiter.shapes[1].body.data #ultrasound
+        us_name = self.r.ultrasound_miss(ent1_id, ent0_id)
+        self.info('ultrasound detection end: ' + us_name)
+        return False
 
 
-    def add_entity(self, ent, category='default'):
-
+    def add_entity(self, ent, category):
+        # add to entity counter
         if category not in self.entities.keys():
             self.entities[category] = []
- #       self.entities[category].append(ent)
         self.entities.add_item(category, ent)
-    
+
+
 #    @property
  #   def entities(self):
   #      return self._entities
@@ -202,9 +202,28 @@ class TestGame(Widget):
      #   self.app.ent_count = '\n'.join(['{}={}'.format(key, len(val)) for key, val in self.entities.items()])
       #  self._entities = value
 
-    def init_entity(self, component_dict, component_order, category):
+    def init_entity(self, component_dict, component_order, category='default_category', object_info=None):
+        if object_info is not None:
+            category = object_info.get('category', category)
+        else:
+            object_info = {}
+
         ent = self.gameworld.init_entity(component_dict, component_order)
+
+        # add to counter
         self.add_entity(ent, category)
+
+        object_info.update({'ent': ent})
+        entity_info = object_info
+
+        print('@'*42)
+        self.pprint(entity_info)
+        print(Robot.cats, category in Robot.cats)
+
+        # add to specific subobjects
+        if category in Robot.cats:
+            self.r.add_entity(entity_info)
+
         return ent
 
 
@@ -223,7 +242,7 @@ class TestGame(Widget):
                 else:
                     if ent_cat in cat_list:
                         delete = True
-                
+
             if delete:
                 prinf('Clearing entities of ' + ent_cat)
                 for ent in ent_list:
@@ -238,7 +257,7 @@ class TestGame(Widget):
     def draw_some_stuff(self):
      #   self.load_svg('objects.svg', self.gameworld)
         #self.load_svg('map.svg', self.gameworld)
-        self.map.draw_stuff() 
+        self.map.draw_stuff()
  #       self.load_svg('map.svg', self.gameworld)
 
 
@@ -246,7 +265,7 @@ class TestGame(Widget):
         self.gameworld.update(dt)
 
     def setup_states(self):
-        self.gameworld.add_state(state_name='main', 
+        self.gameworld.add_state(state_name='main',
             systems_added=['poly_renderer'],
             systems_removed=[], systems_paused=[],
             systems_unpaused=['poly_renderer'],
@@ -273,7 +292,7 @@ class DalekApp(App):
     damping = NumericProperty(0.5)
     #def __init__(self, **kwargs):
      #   super(App, self).__init__(**kwargs)
-      #  return 
+      #  return
     def build(self):
         # root.bind(size=self._update_rect, pos=self._update_rect)
         h = 700

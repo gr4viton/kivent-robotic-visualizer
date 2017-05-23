@@ -30,7 +30,7 @@ class FileLoader:
         def _median(li):
             li = sorted(li)
             lenli = len(li)
-            if lenli % 2: 
+            if lenli % 2:
                 return li[lenli//2]
             else:
                 return (li[lenli//2 - 1] + li[lenli//2])/2.0
@@ -65,7 +65,7 @@ class FileLoader:
         #and path vertices
         for i, (x, y) in enumerate(ret.path_vertices):
             ret.path_vertices[i] = (x - xmid, y - ymid)
-        
+
         return ret, (xmid, ymid)
 
 
@@ -74,9 +74,11 @@ class FileLoader:
         data = mm.get_model_info_for_svg(fname)
 
         print('loading svg:', fname)
-        mass = 50 
+        mass = 50
+        object_info = {'category': fname}
         category = fname
         collision_type = 0
+        name = None
 
         for info in data['model_info']:
             info, pos = self.normalize_info(info)
@@ -86,7 +88,7 @@ class FileLoader:
                 print(info_dict)
 
                 mass = float(info_dict.get('mass', mass))
-                category = info_dict.get('category', category)
+                object_info = info_dict.get('object_info', object_info)
                 collision_type = int(info_dict.get('collision_type', collision_type))
 
             #if massless:
@@ -98,9 +100,9 @@ class FileLoader:
             #Logger.debug
             prind("adding object with title/element_id=%s/%s and desc=%s",
                          info.title, info.element_id, info.description)
-            
 
-            this_model_name = data['svg_name'] 
+
+            this_model_name = data['svg_name']
             model_name = mm.load_model_from_model_info(info, this_model_name)
 
             poly_shape = {
@@ -115,7 +117,7 @@ class FileLoader:
                 }
 
             }
-           
+
             physics = {
                     'main_shape': 'poly',
                     'velocity': (0, 0),
@@ -123,21 +125,21 @@ class FileLoader:
                     'angle': 0,
                     'angular_velocity': radians(0),
                     'ang_vel_limit': radians(0),
-                    'mass': mass, 
+                    'mass': mass,
                     'col_shapes': [poly_shape]
             }
 
             create_dict = {
                     'position': pos,
                     'rotate_poly_renderer': {'model_key': model_name},
-                    'cymunk_physics': physics, 
+                    'cymunk_physics': physics,
                     'rotate': radians(0),
             }
 
             #ent = gameworld.init_entity(create_dict, ['position', 'rotate', 'poly_renderer', 'cymunk_physics'])
             component_order = ['position', 'rotate', 'rotate_poly_renderer', 'cymunk_physics']
-            self.root.init_entity(create_dict, component_order, category)
+            self.root.init_entity(create_dict, component_order, object_info=object_info)
 
-#        mm.unload_models_for_svg(data['svg_name'])   
+#        mm.unload_models_for_svg(data['svg_name'])
 
-    
+
