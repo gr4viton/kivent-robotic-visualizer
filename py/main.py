@@ -42,12 +42,14 @@ from file_loader import FileLoader
 from surface import Map2D
 from asteroids import Asteroids
 
+import pprint
+
 def get_asset_path(asset, asset_loc):
     return join(dirname(dirname(abspath(__file__))), asset_loc, asset)
 
-def _get_args_dict(fn, args, kwargs):
-    args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
-    return {**dict(zip(args_names, args)), **kwargs}
+#def _get_args_dict(fn, args, kwargs):
+#    args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
+#    return {**dict(zip(args_names, args)), **kwargs}
 
 texture_manager.load_atlas(get_asset_path('background_objects.atlas','assets'))
 #texture_manager.load_atlas(get_asset_path('dalek_objects.atlas','assets'))
@@ -109,23 +111,31 @@ class TestGame(Widget):
         self.app.info_text += '\n' + str(text)
 
     def init_game(self):
+        # called automatically? probably
+        self.pp = pprint.PrettyPrinter(indent=4)
+        self.pprint = self.pp.pprint
 
         self.setup_states()
         self.set_state()
         self.init_loaders()
         self.init_physicals()
 
+
+
     def init_loaders(self):
         self.fl = FileLoader(self)
 
     def init_physicals(self):
 #        self._entities = {}
+        self.setup_collision_callbacks()
+
         self.entities = Entities(self.app)
         
         self.map = Map2D(self)
 
         self.asteroids = Asteroids(self)
         self.init_robot()
+
 
     def init_robot(self):
 
@@ -136,11 +146,44 @@ class TestGame(Widget):
     def draw_asteroids(self):
         self.asteroids.draw_asteroids()
 
-    def create_robot(self):
+    def setup_collision_callbacks(self):
+        self.collision_types = {
+                'wall': 0,
+                'obstacle' : 0,
+                'ultrasound_detectable' : 0,
+                'ultrasound' : 4,
+                'robot' : 9
+                }
+        cts = self.collision_types
 
+        sm = self.gameworld.system_manager
+        self.pprint(dir(sm))
+ #       systems = self.gameworld.systems
         
-        pass
 
+
+        self.pprint(sm['cymunk_physics'])
+        physics_system = sm['cymunk_physics']
+        def rfalse(na,nb):
+             return False
+        #collide_remove_first
+        physics_system.add_collision_handler(
+            cts['ultrasound_detectable'], cts['ultrasound'],
+            begin_func=self.begin_ultrasound_hit,
+            separate_func=self.begin_ultrasound_miss)
+
+
+    def begin_ultrasound_hit(self, space, arbiter):                                                            
+        ent1_id = arbiter.shapes[0].body.data #puck                                                                   
+        ent2_id = arbiter.shapes[1].body.data #airhole                                                                
+        self.info('ultrasound detection')
+        return False                                                                                                  
+
+    def begin_ultrasound_miss(self, space, arbiter):                                                            
+        ent1_id = arbiter.shapes[0].body.data #puck                            
+        ent2_id = arbiter.shapes[1].body.data #airhole                         
+        self.info('ultrasound detection end')
+        return False                                                           
 
 
     def add_entity(self, ent, category='default'):

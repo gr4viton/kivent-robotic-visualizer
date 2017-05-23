@@ -29,6 +29,8 @@ class Robot:
 #        self.pos = pos
         self.__svg_dir__ = '../assets/objects/svg/'
 #        self.siz = siz
+
+        self.cts = root.collision_types
         self.drive = drive
         self.create_robot()
 
@@ -54,7 +56,7 @@ class Robot:
         cat = 'ultrasound'
         info_dict = {
                 'category': cat,
-                'collision_type': 0,
+                'collision_type': self.cts[cat],
                 'id': str(i)
                 }
         info_str = json.dumps(info_dict)

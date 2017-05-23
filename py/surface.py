@@ -28,6 +28,7 @@ class Map2D:
 
         self.__svg_map_dir__ = '../assets/maps/svg/'
         self.clear_maps()
+        self.cts = self.root.collision_types
 
         self.draw_walls()
         #self.draw_some_stuff()
@@ -66,9 +67,9 @@ class Map2D:
         
     def create_wall(self, pos_lf, size, txu): 
         w, h = size
-
+        cat = 'wall'
         pos = [pos_lf[i] + size[i]/2 for i in range(2)]
-        model_key = 'wall' + str(self.wall_id)
+        model_key = cat + str(self.wall_id)
         self.root.gameworld.model_manager.load_textured_rectangle('vertex_format_4f', w, h, txu, model_key)
         mass = 0
 
@@ -76,7 +77,7 @@ class Map2D:
         col_shape = {
                 'shape_type': 'box', 
                 'elasticity': 1.0,
-                'collision_type': 0, 
+                'collision_type': self.cts[cat], 
                 'shape_info': shape_dict, 'friction': 1.0
             }
         col_shapes = [col_shape]
@@ -102,7 +103,7 @@ class Map2D:
 
         component_order = ['position', 'rotate', 'rotate_renderer', 'cymunk_physics']
         self.wall_id += 1
-        return self.root.init_entity(create_component_dict, component_order, 'walls')
+        return self.root.init_entity(create_component_dict, component_order, cat)
 
     def draw_obstacles(self):
         fname = self.create_obstacles()
@@ -146,12 +147,13 @@ class Map2D:
   #          mass = randint(*mass_interval)
             dens = randrange(*dens_interval)
             mass = siz[0] * siz[1] * dens/1000
-
-            name = 'obstacle' + str(i)
+            cat = 'obstacle'
+            name = cat + str(i)
             info_dict = {
                       #  'name': name,
                         'mass': mass,
-                        'category': 'obstacle'
+                        'category': cat,
+                        'collision_type': self.cts[cat]
                     }
             # id is necessary attribut for the kivent svg loader!, also I use it for sharing info about the obstacle
             info_str = json.dumps(info_dict)
