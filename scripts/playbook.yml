@@ -1,0 +1,117 @@
+---
+- hosts: localhost
+  become: true
+  gather_facts: False
+  #  environment:
+  # PIP_INDEX_URL: https://data_and_automation:JQq978V504@pypi.skypicker.com/pypi/
+    #AUTOMATION_DIR: /srv/da/automation
+    #VENV_DIR: $AUTOMATION_DIR'venv'
+
+  pre_tasks:
+  - name: install python 2
+    raw: test -e /usr/bin/python || (apt -y update && apt install -y python-minimal)
+
+  tasks:
+      #  - name: Get aptitude for upgrade
+      #apt: pkg=aptitude state=present
+ 
+      # - name: Safe system upgrade via aptitude
+      #apt: upgrade=safe
+
+      #- name: update apt cache
+      #apt: update_cache=yes
+
+    - name: install virtualenv
+      pip:
+        name: virtualenv
+
+    - name: Manually create the initial virtualenv
+      command: virtualenv -p python3 /srv/kivy/venv-kivy creates="/srv/kivy/venv-kivy"
+
+    - name: install required packages
+      dnf: name={{item}} state=latest # update_cache=yes
+      with_items:
+        - python3-devel
+        - SDL2-devel
+        - SDL2_image-devel
+        - SDL2_mixer-devel
+        - SDL2_ttf-devel
+        - portmidi-devel
+        - libavdevice
+        - libavc1394-devel
+        - zlibrary-devel
+        - ccache
+          #- java-1.8.0-openjdk
+          #- java-1.8.0-openjdk-devel
+        - mesa-libGL                                   
+        - mesa-libGL-devel                             
+          #- kivy                                         
+        - xclip                                        
+        - ffmpeg                                       
+          #- opencv-python                                
+          #- ffmpeg-devel ffmpegthumbnailer ffmpeg-compat 
+        - gstreamer-python                             
+        - gstreamer-devel                              
+        - python-setuptools
+          # https://kivy.org/docs/installation/installation-linux.html
+        - make
+        - mercurial
+        - automake
+        - gcc
+        - gcc-c++
+        - SDL_ttf-devel
+        - SDL_mixer-devel
+          #- khrplatform-devel # no module found
+        - mesa-libGLES
+        - mesa-libGLES-devel
+        - gstreamer-plugins-good
+        - gstreamer
+        - gstreamer-python
+        - python3-devel
+        - mtdev-devel
+        - python-pip
+
+
+    - name: Install requirements
+      pip:
+        requirements: /srv/kivy/requirements.txt
+        virtualenv: /srv/kivy/venv-kivy/
+
+    - name: git clone kivy dev from github
+      git:
+        repo: https://github.com/kivy/kivy.git
+        dest: /srv/kivy/kivy-install
+        
+
+        # - name: python build kivy dev = make = ~5mins
+        # shell: "cd /srv/kivy/kivy-install; /srv/kivy/venv-kivy/bin/python setup.py build_ext --inplace -f"
+      
+        #- name: install kivy into python virtualenv ~2min
+        #shell: "cd /srv/kivy/kivy-install; /srv/kivy/venv-kivy/bin/python setup.py install"
+
+    - name: git clone cymunk = chipmunk2D wrapper = physics module
+      git:
+        repo: https://github.com/kivy/cymunk
+        dest: /srv/kivy/kivy-install/cymunk
+    
+    - name: build cymunk
+      shell: "cd /srv/kivy/kivy-install/cymunk; /srv/kivy/venv-kivy/bin/python setup.py build_ext --inplace -f"
+
+    - name: install cymunk
+      shell: "cd /srv/kivy/kivy-install/cymunk; /srv/kivy/venv-kivy/bin/python setup.py install"
+
+    - name: git clone kivent dev from github
+      git:
+        repo: https://github.com/kivy/kivent
+        dest: /srv/kivy/kivy-install/kivent
+
+    - name: install kivent
+      shell: "source /srv/kivy/venv-kivy/bin/activate; cd /srv/kivy/kivy-install/kivent; /srv/kivy/kivy-install/kivent/scripts/install_all.sh"
+
+
+      #- name: install webkit-server
+      #pip:
+      #name: git+https://github.com/niklasb/webkit-server.git#egg=webkit-server
+      #  editable: true
+      # virtualenv: /srv/kivy/venv-kivy
+

@@ -10,8 +10,8 @@ from kivent_core.gameworld import GameWorld
 from kivent_core.managers.resource_managers import texture_manager
 
 
-from kivent_maps import map_utils
-from kivent_maps.map_system import MapSystem
+#from kivent_maps import map_utils
+#from kivent_maps.map_system import MapSystem
 
 
 from kivent_core.rendering.svg_loader import SVGModelInfo
