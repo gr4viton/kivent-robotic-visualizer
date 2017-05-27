@@ -78,7 +78,7 @@ TestGame:
             zones: ['touch']
             zone_to_use: 'touch'
             physics_system: 'cymunk_physics'
-            ignore_groups: [4]
+            ignore_groups: root.ignore_groups #root.collision_types['ultrasound']
             touch_radius: 30
             max_force: 2500000*10
         
@@ -134,6 +134,9 @@ TestGame:
 
 <InfoPanel@ColoredGridLayout>:
     cols: 1
+    Button:
+        text: 'Set robot mid'
+        on_release: app.root.set_robot_mid()
     Button:
         text: 'Apply impulse'
         on_release: app.root.kick_robot()

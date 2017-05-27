@@ -101,6 +101,16 @@ class Entities(Mapping):
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
+        self.ultrasound_count = 10 
+        self.collision_types = {
+                'wall': 0,
+                'obstacle' : 0,
+                'ultrasound_detectable' : 0,
+                'ultrasound' : [50 + i for i in range(self.ultrasound_count)],
+                'robot' : 9
+                }
+        self.ignore_groups = self.collision_types['ultrasound']
+        [ self.ignore_groups.append(self.collision_types[key]) for key in ['robot']]
         super(TestGame, self).__init__(**kwargs)
 
         self.gameworld.init_gameworld(
@@ -118,9 +128,11 @@ class TestGame(Widget):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.pprint = self.pp.pprint
 
+        self.r = None
         self.setup_states()
         self.set_state()
         self.init_loaders()
+        print('init_physicals')
         self.init_physicals()
         self.init_space_constraints()
 
@@ -141,22 +153,14 @@ class TestGame(Widget):
 
 
     def init_robot(self):
-
         self.r = Robot(self, drive='mecanum')
 
-        self.fl.load_svg(self.r.path, self.gameworld)
+        #self.fl.load_svg(self.r.path, self.gameworld)
 
     def draw_asteroids(self):
         self.asteroids.draw_asteroids()
 
     def setup_collision_callbacks(self):
-        self.collision_types = {
-                'wall': 0,
-                'obstacle' : 0,
-                'ultrasound_detectable' : 0,
-                'ultrasound' : 4,
-                'robot' : 9
-                }
         cts = self.collision_types
 
         sm = self.gameworld.system_manager
@@ -168,24 +172,42 @@ class TestGame(Widget):
         def rfalse(na,nb):
              return False
         #collide_remove_first
-        physics_system.add_collision_handler(
-            cts['ultrasound_detectable'], cts['ultrasound'],
-            begin_func=self.begin_ultrasound_hit,
-            separate_func=self.begin_ultrasound_miss)
+        
+        self.begin_ultrasound_callback = []
+        for us_id in range(self.ultrasound_count):
+            physics_system.add_collision_handler(
+                cts['ultrasound_detectable'], cts['ultrasound'][us_id],
+                begin_func=self.return_begin_ultrasound_callback(us_id, 'hit'),
+                separate_func=self.return_begin_ultrasound_callback(us_id, 'miss'))
 
 
-    def begin_ultrasound_hit(self, space, arbiter):
-        ent0_id = arbiter.shapes[0].body.data #detectable_object
-        ent1_id = arbiter.shapes[1].body.data #ultrasound
-        us_name = self.r.ultrasound_hit(ent1_id, ent0_id)
-        self.info('ultrasound detection: ' + us_name)
-        return False
+    def return_begin_ultrasound_callback(self, us_id, state):
+        # this adds the segmentation fault on exit - but currently I am not able to simulate ultrasounds any other way than 
+        # returnin
+        #def begin_ultrasound_callback(self, space, arbiter):
+        def begin_ultrasound_callback(space, arbiter):
+            #state = 
+            #self = self
+            ent0_id = arbiter.shapes[0].body.data #detectable_object
+            ent1_id = arbiter.shapes[1].body.data #ultrasound
+           # self.info('ent0,1 = {} {}'.format(ent0_id, ent1_id))
+            print('ultrasound ',  'id', us_id, 'state', state,)
+            print(self.r.ent)
+            #self.pprint(dir(space))
+            #space.enable_contact_graph = 1
+
+            #us_name = self.r.ultrasound_hit(ent1_id, ent0_id)
+            #self.info('ultrasound detection: ' + us_name)
+            return False
+        #self.begin_ultrasound_callback.append(begin_ultrasound_callback)
+        #return self.begin_ultrasound_callback[us_id]
+        return begin_ultrasound_callback
 
     def begin_ultrasound_miss(self, space, arbiter):
         ent0_id = arbiter.shapes[0].body.data #detectable_object
         ent1_id = arbiter.shapes[1].body.data #ultrasound
-        us_name = self.r.ultrasound_miss(ent1_id, ent0_id)
-        self.info('ultrasound detection end: ' + us_name)
+        #us_name = self.r.ultrasound_miss(ent1_id, ent0_id)
+        #self.info('ultrasound detection end: ' + us_name)
         return False
 
 
@@ -195,6 +217,11 @@ class TestGame(Widget):
             self.entities[category] = []
         self.entities.add_item(category, ent)
     
+    def set_robot_mid(self):
+        rob_ent = self.r.ent
+        rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
+        rob_body.position = (100,100)
+
     def kick_robot(self):
         rob_ent = self.r.ent
         p = self.gameworld.system_manager['cymunk_physics']
@@ -203,10 +230,11 @@ class TestGame(Widget):
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
         print(dir(rob_body))
 
-        im = (1000, 10000)
+        im = (100000, 1000000)
         seq = [-1, 1]
         imp = (choice(seq) * randint(*im), choice(seq) * randint(*im))
         rob_body.apply_impulse(imp)
+        print('impulse', imp)
         
         #p.querry_segment((x,y),(x,y))
         #if len(hits) > 0:
@@ -220,7 +248,7 @@ class TestGame(Widget):
         #    gameview.focus_entity = False
 
     def init_space_constraints(self):
-
+        return 
         p = self.gameworld.system_manager['cymunk_physics']
         self.pprint(dir(p))
         
@@ -312,9 +340,12 @@ class TestGame(Widget):
         print(Robot.cats, category in Robot.cats)
 
         # add to specific subobjects
-        if category in Robot.cats:
-            self.r.add_entity(entity_info)
-
+        if self.r is not None:
+            if category in Robot.cats:
+                self.r.add_entity(entity_info)
+                if category == 'robot':
+                    print('added robot')
+            
         return ent
 
 

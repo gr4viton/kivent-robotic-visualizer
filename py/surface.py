@@ -65,7 +65,7 @@ class Map2D:
             self.create_wall(pos, size, txu)
 
         
-    def create_wall(self, pos_lf, size, txu): 
+    def create_wall(self, pos_lf, size, txu, name='wall'): 
         w, h = size
         cat = 'wall'
         pos = [pos_lf[i] + size[i]/2 for i in range(2)]
@@ -100,10 +100,15 @@ class Map2D:
                 'position': pos,
                 'rotate': 0,
             }
-
+        
+        name = cat + str(randint(0,100000))
+        object_info = {
+            'name': name,
+            'category': cat,
+        }
         component_order = ['position', 'rotate', 'rotate_renderer', 'cymunk_physics']
         self.wall_id += 1
-        return self.root.init_entity(create_component_dict, component_order, cat)
+        return self.root.init_entity(create_component_dict, component_order, object_info=object_info)
 
     def draw_obstacles(self):
         fname = self.create_obstacles()
@@ -150,10 +155,12 @@ class Map2D:
             cat = 'obstacle'
             name = cat + str(i)
             info_dict = {
-                      #  'name': name,
                         'mass': mass,
-                        'category': cat,
-                        'collision_type': self.cts[cat]
+                        'object_info': {
+                            'name': name,
+                            'category': cat,
+                            'collision_type': self.cts[cat]
+                        }
                     }
             # id is necessary attribut for the kivent svg loader!, also I use it for sharing info about the obstacle
             info_str = json.dumps(info_dict)
