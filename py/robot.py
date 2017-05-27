@@ -22,7 +22,7 @@ svg.profile = 'tiny'
 
 class UltrasoundSensor:
 
-    def __init__(self, ent, name, open_angle=None, distance_range=None, category='ultrasound'):
+    def __init__(self, ent, name, open_angle=None, distance_range=None, category='ultrasound', mass=None):
         self.ent = ent
         self.name = name
         self.open_angle = open_angle
@@ -77,6 +77,7 @@ class Robot:
                 'object_info': {
                     'name': str(name),
                     'category': cat,
+                    'mass': 0,
                     },
                 }
         info_str = json.dumps(info_dict)
@@ -100,7 +101,8 @@ class Robot:
             us = UltrasoundSensor(**entity_info)
 #            self.ultrasounds.append()
             self.ultrasounds[entity_info['ent']] = us
-
+        elif category in 'robot':
+            self.ent = entity_info['ent']
 
         #self.entities[category].append(ent)
 

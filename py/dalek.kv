@@ -81,6 +81,11 @@ TestGame:
             ignore_groups: [4]
             touch_radius: 30
             max_force: 2500000*10
+        
+  #      SteeringSystem:
+   #         gameworld: root.gameworld
+    #        physics_system: 'cymunk_physics'
+    #        zones: ['general']
 
     GameScreenManager:
         id: gamescreenmanager
@@ -129,7 +134,9 @@ TestGame:
 
 <InfoPanel@ColoredGridLayout>:
     cols: 1
-
+    Button:
+        text: 'Apply impulse'
+        on_release: app.root.kick_robot()
     Button:
         text: 'Draw some stuff'
         on_release: app.root.draw_some_stuff()

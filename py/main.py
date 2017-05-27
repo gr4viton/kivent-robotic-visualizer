@@ -23,6 +23,8 @@ from kivy.properties import StringProperty, NumericProperty
 from functools import partial
 from os.path import dirname, join, abspath
 
+from random import randint, choice
+
 import logging
 
 from logging import info as prinf
@@ -103,7 +105,8 @@ class TestGame(Widget):
 
         self.gameworld.init_gameworld(
             ['cymunk_physics', 'poly_renderer', 'rotate_poly_renderer',
-                'rotate_renderer',
+                'rotate_renderer', 
+                #'steering_system'
                 'rotate', 'position',  'cymunk_touch' ],
             callback=self.init_game)
 
@@ -119,7 +122,7 @@ class TestGame(Widget):
         self.set_state()
         self.init_loaders()
         self.init_physicals()
-
+        self.init_space_constraints()
 
 
     def init_loaders(self):
@@ -191,7 +194,95 @@ class TestGame(Widget):
         if category not in self.entities.keys():
             self.entities[category] = []
         self.entities.add_item(category, ent)
+    
+    def kick_robot(self):
+        rob_ent = self.r.ent
+        p = self.gameworld.system_manager['cymunk_physics']
+        self.pprint(dir(p))
+        
+        rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
+        print(dir(rob_body))
 
+        im = (1000, 10000)
+        seq = [-1, 1]
+        imp = (choice(seq) * randint(*im), choice(seq) * randint(*im))
+        rob_body.apply_impulse(imp)
+        
+        #p.querry_segment((x,y),(x,y))
+        #if len(hits) > 0:
+        #    ent = entities[hits[0][0]]
+        #    ent.color.r = 0
+        #    self.app.selected_id = ent.entity_id
+        #    gameview.entity_to_focus = ent.entity_id
+        #    gameview.focus_entity = True
+        #else:
+        #    self.app.selected = None
+        #    gameview.focus_entity = False
+
+    def init_space_constraints(self):
+
+        p = self.gameworld.system_manager['cymunk_physics']
+        self.pprint(dir(p))
+        
+        space = p.space
+        self.pprint(dir(space))
+
+        rob_ent = self.r.ent
+        rob = self.gameworld.entities[rob_ent]
+        rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
+        rob_renderer = rob.rotate_poly_renderer
+        print('rob_body')
+        self.pprint(dir(rob_body))
+        print('rob_renderer')
+        self.pprint(dir(rob_renderer))
+        for us_ent in self.r.ultrasounds.keys():
+            us = self.gameworld.entities[us_ent]
+            usb = us.cymunk_physics.body
+            kwargs = {#'rest_length': 10,
+			'stiffness': 10,
+		        'damping': 0.1}
+            b1 = rob_body
+            b2 = usb
+            joint_type = 'DampedSpring'
+            cymunk = kivent_cymunk.physics.cymunk
+            print(dir(cymunk))
+         #   print(cymunk.DampedSpring.__init__.__code__.co_varnames)
+
+            an1 = (0,0)
+            an4 = (10, -10)
+            an5 = (10, 10)
+            an2 = (100,-100)
+            an3 = (100,100)
+            
+            
+
+            self.pprint(dir(rob_body))
+            h = rob_renderer.height/2
+            rob_att = (0, h)
+
+
+
+            anchor_pairs = ((an1, an1), (an2, an4), (an2, an5))
+            anchor_pairs = ((an1, an1), (an1, an2), (an1, an3))
+            
+            A = ((100, 0), (10, 100))
+            B = ((-100, 0), (-10, 100))
+            C = ((0, -100), (0, 100))
+            
+            anchor_pairs = (A,B,C)
+
+            A = ((-20, 0), (-10, 0))
+            B = ((20, 0), (10, 0))
+            C = ((0, -20), (0, -10))
+            anchor_pairs = (A,B)
+            for anchor_pair in anchor_pairs:
+                anch1, anch2 = anchor_pair
+                con = cymunk.PinJoint(b1, b2, anch1, anch2)
+                space.add_constraint(con)
+            
+            break
+            #anchor_pair = 
+                #con = cymunk.DampedSpring(b1, b2, anch1, anch2, joint_type, **kwargs)           
 
 #    @property
  #   def entities(self):
