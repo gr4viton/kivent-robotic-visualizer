@@ -101,6 +101,9 @@ class Robot:
         us = self.ultrasounds[ultrasound_id]
         us.detected = state
         return us.name
+    
+    def ultrasound_states(self):
+        return '|'.join(['{}={}'.format(us.name, us.detected) for us in self.ultrasounds.values()])
 
     def create_robot(self):
         self.color = '#FF0000'
@@ -161,10 +164,17 @@ class Robot:
         count_ultrasounds = 3
         names = ['right', 'middle', 'left' ]
         ultrasound_range = 100
+        ultrasound_ranges = [ultrasound_range, ultrasound_range + 100]
         x0, y0 = self.pos[0] + 0, self.pos[1] + h/4
+        x0, y0 = 0, h/2 
+
+        us_color = (0, 255, 0)
+        self.max_us_range = 250
+        self.max_us_opacity = 200
+        us_models = []
         for i in range(count_ultrasounds):
             # to center it
-            shift_angle = count_ultrasounds / 2 * open_angle + radians(180)
+            shift_angle = count_ultrasounds / 2 * open_angle # + radians(180)
             # cone edges
             edge_angles = (i * open_angle - shift_angle,
                      (1 + i) * open_angle - shift_angle)
@@ -175,7 +185,7 @@ class Robot:
                 ] for edge_angle in edge_angles]
 
             vert_list = [(x0, y0), edge_points[0], edge_points[1]]
-
+            
             mass = 0
             us_id = cts['ultrasound'][i]
 
@@ -197,6 +207,10 @@ class Robot:
                 'us_id': us_id,
                 'name': names[i]
             }
+            
+            us_color = (randint(100,200), 255*randint(8,10)/10, randint(100,100))
+            us_model = self.get_triangle_data(vert_list, us_color, ultrasound_ranges)
+            us_models.append(us_model)
 
             self.add_entity(entity_info)
         
@@ -215,15 +229,25 @@ class Robot:
         model_name = robot_name
         model_manager = self.root.gameworld.model_manager
 
-        rectangle_data = self.get_rectangle_data(h, w)
+        rect_data = self.get_rectangle_data(h, w)
+        rect_data2 = self.get_rectangle_data(w,h)
+
+        
+        rects = [rect_data, rect_data2]
+        rects.extend(us_models)
+        model_data = self.join_vert_models(rects)
+        
+        
         rectangle_model = model_manager.load_model(
                                             'vertex_format_2f4ub',
-                                            rectangle_data['vertex_count'],
-                                            rectangle_data['index_count'],
+                                            model_data['vertex_count'],
+                                            model_data['index_count'],
                                             model_name,
-                                            indices=rectangle_data['indices'],
-                                            vertices=rectangle_data['vertices']
+                                            indices=model_data['indices'],
+                                            vertices=model_data['vertices']
                                             )
+
+        #self.root.pprint(dir(model_manager))
         robot_model = rectangle_model
         #self.shapes['rectangle_model'] = rectangle_model
 
@@ -255,7 +279,38 @@ class Robot:
     
         self.ent = self.root.gameworld.init_entity(component_dict, component_order)
 
+    def join_vert_models(self, model_list):
+        self.root.pprint(model_list)
+        
+        vertices = None
+        indices = None
+        prev_vert_count = 0
+        for d in model_list:
+            if indices is None:
+                indices = list(d['indices'])
+                vertices = dict(d['vertices'])
+            else:
+                this_indices_incremented = [ind + prev_vert_count for ind in d['indices']] 
+                indices.extend(this_indices_incremented)
+                this_vertices_incremented = {(k + prev_vert_count) : v for k, v in d['vertices'].items()}
 
+                # did not work
+                # vertices.update(this_indices_incremented)
+                for k, v in this_vertices_incremented.items():
+                    vertices[k] = v
+
+            prev_vert_count += d['vertex_count']
+
+        joined = { 
+                'vertex_count': sum([d['vertex_count'] for d in model_list]),
+                'index_count': sum([d['index_count'] for d in model_list]),
+                'indices': indices,
+                'vertices': vertices
+                }
+        self.root.pprint(joined)
+        return joined
+        
+        
 
     @staticmethod
     def get_rectangle_data(height, width):
@@ -273,3 +328,27 @@ class Robot:
                 'vertex_count': 4,
                 'index_count': 6,
             }
+    
+    def get_triangle_data(self, vert_list, us_color, us_range_list):
+
+        opacities = [self.max_us_opacity * (1 - us_range / self.max_us_range) 
+                for us_range in us_range_list]
+        #print(opacities)
+        colors = [list(us_color), list(us_color)]
+        [color.append(opacity) for color, opacity in zip(colors,opacities)]
+        #print(colors)
+        
+        color_inds = [0, 1, 1]
+        #print(vert_list)
+        #print([(i, v) for i,v in enumerate(vert_list)])
+        vertices = {i: {'pos': vert_tuple, 'v_color': colors[color_inds[i]]} for i, vert_tuple
+                in enumerate(vert_list)}
+        model_info = {
+                'vertices': vertices,
+                'indices': [0, 1, 2],
+                'vertex_count': 3,
+                'index_count': 3,
+            }
+        return model_info
+
+    

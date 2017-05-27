@@ -103,7 +103,10 @@ class FileLoader:
 
 
             this_model_name = data['svg_name']
+            print('>>'*42)
+            self.root.pprint(info)
             model_name = mm.load_model_from_model_info(info, this_model_name)
+            
 
             poly_shape = {
                 'shape_type': 'poly',

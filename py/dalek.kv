@@ -101,9 +101,9 @@ TestGame:
     name: 'main'
     FloatLayout:
         ControlPanel:
-            cols:1
-            size_hint: (.2, 1)
-            pos_hint: {'x': 0.8, 'y': 0}
+            cols: 1
+            size_hint: (.25, 1)
+            pos_hint: {'x': 0.75, 'y': 0}
 
 <ColoredGridLayout@GridLayout>:
     bg_color: .1, .1, .7, .3
@@ -174,16 +174,26 @@ TestGame:
 #    TitledText
 #    TitledText
 
+<ScrollableLabel>:
+    #text: 'text'
+    Label:
+        size_hint_y: None
+        height: self.texture_size[1]
+        text_size: self.width, None
+        text: root.text
+
 <TitledText@ColoredGridLayout>:
     text: 'text'
     title: 'title'
     multiline: True
     cols: 1
     Label:
+        size_hint_y: 0.1
         text: root.title
-    ROTextInput:
+   # ROTextInput:
+    ScrollableLabel:
         text: root.text
-        multiline: root.multiline
+        #multiline: root.multiline
  
 
 <DebugPanel>:

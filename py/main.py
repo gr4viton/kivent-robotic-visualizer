@@ -10,6 +10,8 @@ from kivent_core.gameworld import GameWorld
 from kivent_core.managers.resource_managers import texture_manager
 
 
+from kivy.uix.scrollview import ScrollView
+
 #from kivent_maps import map_utils
 #from kivent_maps.map_system import MapSystem
 
@@ -99,6 +101,9 @@ class Entities(Mapping):
         self.update_count()
         return self._storage.__str__()
 
+
+class ScrollableLabel(ScrollView):
+    text = StringProperty('')
 
 class TestGame(Widget):
     def __init__(self, **kwargs):
@@ -202,7 +207,8 @@ class TestGame(Widget):
             
             us_name = self.r.ultrasound_detection(us_id, ent0_id, state)
             #us_name = self.r.ultrasound_hit(ent1_id, ent0_id)
-            self.info('ultrasound detection: ' + us_name + ' = ' + str(state))
+            #self.info('ultrasound detection: ' + us_name + ' = ' + str(state))
+            self.info(self.r.ultrasound_states())
             return False
         self.begin_ultrasound_callback[us_id] = types.MethodType(begin_ultrasound_callback, self)
         return self.begin_ultrasound_callback[us_id]
