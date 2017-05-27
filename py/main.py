@@ -24,6 +24,7 @@ from functools import partial
 from os.path import dirname, join, abspath
 
 from random import randint, choice
+import types
 
 import logging
 
@@ -109,7 +110,8 @@ class TestGame(Widget):
                 'ultrasound' : [50 + i for i in range(self.ultrasound_count)],
                 'robot' : 9
                 }
-        self.ignore_groups = self.collision_types['ultrasound']
+        self.ignore_groups = []
+        self.ignore_groups.extend(self.collision_types['ultrasound'])
         [ self.ignore_groups.append(self.collision_types[key]) for key in ['robot']]
         super(TestGame, self).__init__(**kwargs)
 
@@ -173,43 +175,38 @@ class TestGame(Widget):
              return False
         #collide_remove_first
         
-        self.begin_ultrasound_callback = []
-        for us_id in range(self.ultrasound_count):
+        self.begin_ultrasound_callback = {}
+        #for us_id in range(self.ultrasound_count):
+        for us_id in cts['ultrasound']:
+            print('us_id', us_id)
             physics_system.add_collision_handler(
-                cts['ultrasound_detectable'], cts['ultrasound'][us_id],
-                begin_func=self.return_begin_ultrasound_callback(us_id, 'hit'),
-                separate_func=self.return_begin_ultrasound_callback(us_id, 'miss'))
+                cts['ultrasound_detectable'], us_id,
+                begin_func=self.return_begin_ultrasound_callback(us_id, True),
+                separate_func=self.return_begin_ultrasound_callback(us_id, False))
 
 
     def return_begin_ultrasound_callback(self, us_id, state):
         # this adds the segmentation fault on exit - but currently I am not able to simulate ultrasounds any other way than 
-        # returnin
-        #def begin_ultrasound_callback(self, space, arbiter):
-        def begin_ultrasound_callback(space, arbiter):
-            #state = 
-            #self = self
+        # returning 
+        def begin_ultrasound_callback(self, space, arbiter):
+        #def begin_ultrasound_callback(space, arbiter):
+            #print(self, space, arbiter)
+            
             ent0_id = arbiter.shapes[0].body.data #detectable_object
             ent1_id = arbiter.shapes[1].body.data #ultrasound
-           # self.info('ent0,1 = {} {}'.format(ent0_id, ent1_id))
-            print('ultrasound ',  'id', us_id, 'state', state,)
-            print(self.r.ent)
+            #self.info('ent0,1 = {} {}'.format(ent0_id, ent1_id))
+            #print('ultrasound ',  'id', us_id, 'state', state,)
+            #print(self.r.ent)
             #self.pprint(dir(space))
             #space.enable_contact_graph = 1
-
+            
+            us_name = self.r.ultrasound_detection(us_id, ent0_id, state)
             #us_name = self.r.ultrasound_hit(ent1_id, ent0_id)
-            #self.info('ultrasound detection: ' + us_name)
+            self.info('ultrasound detection: ' + us_name + ' = ' + str(state))
             return False
-        #self.begin_ultrasound_callback.append(begin_ultrasound_callback)
-        #return self.begin_ultrasound_callback[us_id]
-        return begin_ultrasound_callback
-
-    def begin_ultrasound_miss(self, space, arbiter):
-        ent0_id = arbiter.shapes[0].body.data #detectable_object
-        ent1_id = arbiter.shapes[1].body.data #ultrasound
-        #us_name = self.r.ultrasound_miss(ent1_id, ent0_id)
-        #self.info('ultrasound detection end: ' + us_name)
-        return False
-
+        self.begin_ultrasound_callback[us_id] = types.MethodType(begin_ultrasound_callback, self)
+        return self.begin_ultrasound_callback[us_id]
+        #return begin_ultrasound_callback
 
     def add_entity(self, ent, category):
         # add to entity counter

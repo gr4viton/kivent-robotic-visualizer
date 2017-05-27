@@ -85,7 +85,7 @@ class FileLoader:
 
             if info.description is not None:
                 info_dict = json.loads(info.description)
-                print(info_dict)
+  #              print(info_dict)
 
                 mass = float(info_dict.get('mass', mass))
                 object_info = info_dict.get('object_info', object_info)
@@ -96,7 +96,7 @@ class FileLoader:
             #    mass = float(0)
                 #av = float('inf')
 
-            prinf('mass=%f', mass)
+ #           prinf('mass=%f', mass)
             #Logger.debug
             prind("adding object with title/element_id=%s/%s and desc=%s",
                          info.title, info.element_id, info.description)

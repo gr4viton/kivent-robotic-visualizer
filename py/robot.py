@@ -22,13 +22,12 @@ svg.profile = 'tiny'
 
 class UltrasoundSensor:
 
-    def __init__(self, ent, name, open_angle=None, distance_range=None, category='ultrasound', mass=None):
-        self.ent = ent
+    def __init__(self, us_id, name, open_angle=None, distance_range=None, category='ultrasound', mass=None):
         self.name = name
         self.open_angle = open_angle
         self.distance_range = distance_range
         self.detected = False
-        prinf('UltrasoundSensor created and entangled: %s %s', ent, name)
+        prinf('UltrasoundSensor created and entangled: %s %s', us_id, name)
 
 
 class Robot:
@@ -80,7 +79,8 @@ class Robot:
         if category in 'ultrasound':
             us = UltrasoundSensor(**entity_info)
 #            self.ultrasounds.append()
-            self.ultrasounds[entity_info['ent']] = us
+            self.ultrasounds[entity_info['us_id']] = us
+            print(entity_info['us_id'])
         elif category in 'robot':
             self.ent = entity_info['ent']
 
@@ -91,13 +91,13 @@ class Robot:
 
    #    return self.Ultrasounds
 
-    def ultrasound_hit(self, ultrasound_id, object_id):
-        return self.ultrasound_detection(ultrasound_id, object_id, True)
+    def ultrasound_hit(self, ultrasound_id, object_ent_id):
+        return self.ultrasound_detection(ultrasound_id, object_ent_id, True)
 
     def ultrasound_miss(self, ultrasound_id, object_id):
-        return self.ultrasound_detection(ultrasound_id, object_id, False)
+        return self.ultrasound_detection(ultrasound_id, object_ent_id, False)
 
-    def ultrasound_detection(self, ultrasound_id, object_id, state):
+    def ultrasound_detection(self, ultrasound_id, object_ent_id, state):
         us = self.ultrasounds[ultrasound_id]
         us.detected = state
         return us.name
@@ -176,12 +176,13 @@ class Robot:
 
             vert_list = [(x0, y0), edge_points[0], edge_points[1]]
 
-            #self.create_ultrasound(names[i], '#00FF00', self.stroke_color, vert_list)
             mass = 0
+            us_id = cts['ultrasound'][i]
+
             us_shape = {
                     'shape_type': 'poly',
                     'elasticity': 0.6,
-                    'collision_type': cts['ultrasound'][i],
+                    'collision_type': us_id,
                     'friction': 1.0,
                     'shape_info': {
                         'mass': mass,
@@ -190,6 +191,14 @@ class Robot:
                     }
                 }
             col_shapes.append(us_shape)
+
+            entity_info = {
+                'category': 'ultrasound',
+                'us_id': us_id,
+                'name': names[i]
+            }
+
+            self.add_entity(entity_info)
         
         physics = {
                 'main_shape': 'poly',
