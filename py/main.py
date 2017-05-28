@@ -106,6 +106,7 @@ class ScrollableLabel(ScrollView):
     text = StringProperty('')
 
 class TestGame(Widget):
+    
     def __init__(self, **kwargs):
         self.ultrasound_count = 10 
         self.collision_types = {
@@ -143,6 +144,7 @@ class TestGame(Widget):
         self.init_physicals()
         self.init_space_constraints()
 
+        self.init_ultrasound_status_updater()
 
     def init_loaders(self):
         self.fl = FileLoader(self)
@@ -207,8 +209,7 @@ class TestGame(Widget):
             
             us_name = self.r.ultrasound_detection(us_id, ent0_id, state)
             #us_name = self.r.ultrasound_hit(ent1_id, ent0_id)
-            #self.info('ultrasound detection: ' + us_name + ' = ' + str(state))
-            self.info(self.r.ultrasound_states())
+            #self.info(self.r.ultrasound_states())
             return False
         self.begin_ultrasound_callback[us_id] = types.MethodType(begin_ultrasound_callback, self)
         return self.begin_ultrasound_callback[us_id]
@@ -227,13 +228,15 @@ class TestGame(Widget):
 
     def kick_robot(self):
         rob_ent = self.r.ent
+        print(rob_ent)
         p = self.gameworld.system_manager['cymunk_physics']
         self.pprint(dir(p))
         
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
+        #rob_body = rob_ent.cymunk_physics.body
         print(dir(rob_body))
 
-        im = (100000, 1000000)
+        im = (10000, 10000)
         seq = [-1, 1]
         imp = (choice(seq) * randint(*im), choice(seq) * randint(*im))
         rob_body.apply_impulse(imp)
@@ -400,6 +403,13 @@ class TestGame(Widget):
         self.gameworld.state = 'main'
 
 
+    def init_ultrasound_status_updater(self):
+        Clock.schedule_once(self.update_ultrasound_status)
+
+    def update_ultrasound_status(self, dt):
+        self.app.ultrasound_status = self.r.ultrasound_status()
+        Clock.schedule_once(self.update_ultrasound_status, .05)
+
 class DebugPanel(Widget):
     fps = StringProperty(None)
 
@@ -411,8 +421,10 @@ class DebugPanel(Widget):
         self.fps = str(int(Clock.get_fps()))
         Clock.schedule_once(self.update_fps, .05)
 
+
 class DalekApp(App):
     ent_count = StringProperty('...')
+    ultrasound_status = StringProperty('...')
     info_text = StringProperty('...')
     damping = NumericProperty(0.5)
     #def __init__(self, **kwargs):

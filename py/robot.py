@@ -81,8 +81,8 @@ class Robot:
 #            self.ultrasounds.append()
             self.ultrasounds[entity_info['us_id']] = us
             print(entity_info['us_id'])
-        elif category in 'robot':
-            self.ent = entity_info['ent']
+        #elif category in 'robot':
+            #self.ent = entity_info['ent']
 
         #self.entities[category].append(ent)
 
@@ -102,32 +102,24 @@ class Robot:
         us.detected = state
         return us.name
     
-    def ultrasound_states(self):
+    def ultrasound_status(self):
         return '|'.join(['{}={}'.format(us.name, us.detected) for us in self.ultrasounds.values()])
 
     def create_robot(self):
-        self.color = '#FF0000'
-        self.stroke_color = '#000000'
-        self.path = self.__svg_dir__ + 'robot.svg'
+  #      self.color = '#FF0000'
+ #       self.stroke_color = '#000000'
+#        self.path = self.__svg_dir__ + 'robot.svg'
 
- #       group = self.dwg.add(self.dwg.g(id='obstacles', fill=self.color))
-#        Fw, Fh = self.field_size
- #       w, h = Fw, Fh
-        w,h = 300,300
-        siz = (str(w), str(h))
-        print(siz)
-        self.dwg = None
-        fname = self.path
-        self.dwg = svg.Drawing(fname, size=siz, debug=False, profile=self.baseProfile)
- #       self.dwg.profile = self.baseProfile
-
-        self.create_robot_rect('dalek', '#FF0000', self.stroke_color, 100, (200, 100), [50,100])
+        w, h = 1000,800
+        
+        pos = (randint(0, w), randint(0, h))
+        siz = [40, 60]
+        self.create_robot_rect('dalek', 100, pos, siz)
         
         
 
-        return fname
 
-    def create_robot_rect(self, name, color, stroke_color, mass, pos, siz):
+    def create_robot_rect(self, name, mass, pos, siz):
         id_str = self.robot_name
         insert_pos = [pos[i] + siz[i]/2 for i in range(2)]
         #self.pos = insert_pos
@@ -214,6 +206,7 @@ class Robot:
 
             self.add_entity(entity_info)
         
+        mass = 200
         physics = {
                 'main_shape': 'poly',
                 'velocity': (0, 0),
@@ -230,7 +223,7 @@ class Robot:
         model_manager = self.root.gameworld.model_manager
 
         rect_data = self.get_rectangle_data(h, w)
-        rect_data2 = self.get_rectangle_data(w,h)
+        rect_data2 = self.get_rectangle_data(w,w)
 
         
         rects = [rect_data, rect_data2]
@@ -278,7 +271,7 @@ class Robot:
         #self.root.init_entity(component_dict, component_order, object_info=object_info)
     
         self.ent = self.root.gameworld.init_entity(component_dict, component_order)
-
+        print('>>>>>>', self.ent)
     def join_vert_models(self, model_list):
         self.root.pprint(model_list)
         

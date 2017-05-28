@@ -148,9 +148,9 @@ TestGame:
         text: 'Draw asteroids'
         on_release: app.root.draw_asteroids()
 
-    Button:
-        text: 'Destroy all stuff'
-        on_release: app.root.destroy_all_entities()
+    #Button:
+     #   text: 'Destroy all stuff'
+      #  on_release: app.root.destroy_all_entities()
         
     Button:
         text: 'Destroy objects (not map)'
@@ -165,7 +165,9 @@ TestGame:
     TitledText:
         title: 'Info'
         text: str(app.info_text)
- 
+    TitledText:
+        title: 'ultrasounds'
+        text: app.ultrasound_status
 
 #    TitledText
 #    TitledText
