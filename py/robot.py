@@ -154,7 +154,7 @@ class RobotMecanumControl:
         #wheel_speeds = [+1, +0, +0, +1] # go front left 
         #wheel_speeds = [+0, -1, -1, 0] # go back left 
         #wheel_speeds = [+1, -1, -1, +1] # strafe left
-        wheel_speeds = [+1, -1, +1, -1] # rotate CW
+        #wheel_speeds = [+1, -1, +1, -1] # rotate CW
 
         imp_value = 1000 # strength of actuators
 
@@ -168,21 +168,12 @@ class RobotMecanumControl:
             loc_wheel_pos = Vec2d(wheel_pos)
             loc_imp_vec = Vec2d(imp_vec)
             [v.rotate(ori) for v in [loc_wheel_pos, loc_imp_vec]]
-            print('wheel_pos')
-            print(loc_wheel_pos, wheel_pos)
+            #print('wheel_pos')
+            #print(loc_wheel_pos, wheel_pos)
             b.apply_impulse(loc_imp_vec, loc_wheel_pos)
         
 
     def go(self, vel_vec, ang_vel):
-        ori = self.r.body.angle
-        
-        imp_value = 1000
-        imp_vec = vel_vec * imp_value
-        imp_vec.rotate(ori + radians(90))
-
-        imp_rot = ang_vel
-       # self.r.body.apply_impulse(imp_vec, imp_rot)
-
         wheel_speeds = self.calc_wheel_speed(vel_vec, ang_vel)
         self.apply_wheel_speed(wheel_speeds)
 
@@ -241,14 +232,37 @@ class Robot:
         #print(dir(self.body))
         #print(dir(self.body.position))
         max_angle_dif = radians(10)
+        near_target_dist = 100
 
         n_rel_vec = rel_vec.normalized()
         ang_vel = 0
-        if abs(rel_vec.angle) > max_angle_dif:
-            ang_vel = -rel_vec.angle
-            vel_vec = n_rel_vec * 0.8 
+        
+
+        dets = self.ultrasound_detections()
+        assert len(dets)==3
+        # if us_count is not 3, following algorithm may missbehave
+        if not any(dets):
+            if abs(rel_vec.angle) > max_angle_dif:
+                ang_vel = -rel_vec.angle
+                vel_vec = n_rel_vec * 0.8 
+            else:
+                vel_vec = n_rel_vec
+
+            if rel_vec.length < near_target_dist:
+                ang_vel = ang_vel * 2
+                vel_vec = vel_vec * 0.5
         else:
-            vel_vec = n_rel_vec
+            if abs(rel_vec.angle) > max_angle_dif:
+                ang_vel = -rel_vec.angle
+            if all(dets):
+                vel_vec = n_rel_vec *.5
+            else:
+                vel_vec = n_rel_vec
+             #   vel_vec.rotate_degrees(90)
+            #if dets[0]:
+             #   vel_vec = n_rel_vec
+              #  vel_vec.rotate_degrees(90)
+
 
         self.control.go(vel_vec, ang_vel)
             
@@ -311,6 +325,9 @@ class Robot:
     def ultrasound_status(self):
         return '|'.join(['{}={}'.format(us.name, us.detected) for us in self.ultrasounds.values()])
 
+    def ultrasound_detections(self):
+        return [us.detected for us in self.ultrasounds.values()]
+
     def create_robot(self):
   #      self.color = '#FF0000'
  #       self.stroke_color = '#000000'
@@ -362,19 +379,25 @@ class Robot:
         ultrasound_range = 100
         ultrasound_ranges = [ultrasound_range, ultrasound_range + 100]
         x0, y0 = self.pos[0] + 0, self.pos[1] + h/4
-        x0, y0 = 0, h/2 
+        center_x0, center_y0 = 0, h/2 
 
         us_color = (0, 255, 0)
         self.max_us_range = 250
         self.max_us_opacity = 200
         us_models = []
+        sensor_width = 20
         for i in range(count_ultrasounds):
             # to center it
             shift_angle = count_ultrasounds / 2 * open_angle # + radians(180)
             # cone edges
             edge_angles = (i * open_angle - shift_angle,
                      (1 + i) * open_angle - shift_angle)
-
+            
+            us_x = (i - (count_ultrasounds - 1)/2) * sensor_width 
+            us_y = 0
+            x0 = center_x0 + us_x
+            y0 = center_y0 + us_y
+            
             edge_points = [[
                 ultrasound_range * sin(edge_angle) + x0,
                 ultrasound_range * cos(edge_angle) + y0

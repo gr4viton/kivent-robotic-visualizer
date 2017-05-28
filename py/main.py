@@ -110,15 +110,16 @@ class TestGame(Widget):
     def __init__(self, **kwargs):
         self.ultrasound_count = 10 
         self.collision_types = {
-                'wall': 0,
-                'obstacle' : 0,
+                'wall': 1,
+                'obstacle' : 2,
                 'ultrasound_detectable' : 0,
                 'ultrasound' : [50 + i for i in range(self.ultrasound_count)],
                 'robot' : 9,
                 'candy' : 42,
                 }
-        names = ['wall', 'obstacle', 'candy', 'robot']
-        self.collision_types['ultrasound_detectable'] = list({self.collision_types[name] for name in names}) 
+        detected_names = ['wall', 'obstacle', 'robot']
+        self.collision_types['ultrasound_detectable'] = list({self.collision_types[name] for name in detected_names}) 
+        print('ultrasound_detectable')
         print(self.collision_types['ultrasound_detectable'])
 
         self.ignore_groups = []
@@ -212,8 +213,11 @@ class TestGame(Widget):
                     detectable, us_id,
                     begin_func=self.return_begin_ultrasound_callback(us_id, True),
                     separate_func=self.return_begin_ultrasound_callback(us_id, False))
-
-
+            for ignore in cts.values():
+                if type(ignore) is int: # not list
+                    if ignore not in cts['ultrasound_detectable']:
+                        physics_system.add_collision_handler(ignore, us_id, begin_func=rfalse)
+    
     def return_begin_ultrasound_callback(self, us_id, state):
         # this adds the segmentation fault on exit - but currently I am not able to simulate ultrasounds any other way than 
         # returning 
