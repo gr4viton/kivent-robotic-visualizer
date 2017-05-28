@@ -41,7 +41,7 @@ import inspect
 from collections.abc import Mapping
 #import shutil
 
-from robot import Robot
+from robot import Robot, Candy
 
 from file_loader import FileLoader
 from surface import Map2D
@@ -114,8 +114,13 @@ class TestGame(Widget):
                 'obstacle' : 0,
                 'ultrasound_detectable' : 0,
                 'ultrasound' : [50 + i for i in range(self.ultrasound_count)],
-                'robot' : 9
+                'robot' : 9,
+                'candy' : 42,
                 }
+        names = ['wall', 'obstacle', 'candy', 'robot']
+        self.collision_types['ultrasound_detectable'] = list({self.collision_types[name] for name in names}) 
+        print(self.collision_types['ultrasound_detectable'])
+
         self.ignore_groups = []
         self.ignore_groups.extend(self.collision_types['ultrasound'])
         [ self.ignore_groups.append(self.collision_types[key]) for key in ['robot']]
@@ -136,6 +141,8 @@ class TestGame(Widget):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.pprint = self.pp.pprint
 
+        self.field_size = 1000,800
+
         self.r = None
         self.setup_states()
         self.set_state()
@@ -145,6 +152,11 @@ class TestGame(Widget):
         self.init_space_constraints()
 
         self.init_ultrasound_status_updater()
+
+        self.init_control_logic()
+
+    def init_control_logic(self):
+        self.init_chase_candy_updater()
 
     def init_loaders(self):
         self.fl = FileLoader(self)
@@ -163,8 +175,17 @@ class TestGame(Widget):
 
     def init_robot(self):
         self.r = Robot(self, drive='mecanum')
-
+        
+        self.candy = Candy(self)
         #self.fl.load_svg(self.r.path, self.gameworld)
+
+    def init_chase_candy_updater(self):
+        self.r.chase_candy(self.candy)
+        Clock.schedule_once(self.chase_candy_update)
+
+    def chase_candy_update(self, dt):
+        self.r.goto_target()
+        Clock.schedule_once(self.chase_candy_update, .05)
 
     def draw_asteroids(self):
         self.asteroids.draw_asteroids()
@@ -176,7 +197,7 @@ class TestGame(Widget):
  #       self.pprint(dir(sm))
  #       systems = self.gameworld.systems
 
-        self.pprint(sm['cymunk_physics'])
+        #self.pprint(sm['cymunk_physics'])
         physics_system = sm['cymunk_physics']
         def rfalse(na,nb):
              return False
@@ -185,31 +206,21 @@ class TestGame(Widget):
         self.begin_ultrasound_callback = {}
         #for us_id in range(self.ultrasound_count):
         for us_id in cts['ultrasound']:
-            print('us_id', us_id)
-            physics_system.add_collision_handler(
-                cts['ultrasound_detectable'], us_id,
-                begin_func=self.return_begin_ultrasound_callback(us_id, True),
-                separate_func=self.return_begin_ultrasound_callback(us_id, False))
+            for detectable in cts['ultrasound_detectable']:
+                print('us_id', us_id)
+                physics_system.add_collision_handler(
+                    detectable, us_id,
+                    begin_func=self.return_begin_ultrasound_callback(us_id, True),
+                    separate_func=self.return_begin_ultrasound_callback(us_id, False))
 
 
     def return_begin_ultrasound_callback(self, us_id, state):
         # this adds the segmentation fault on exit - but currently I am not able to simulate ultrasounds any other way than 
         # returning 
         def begin_ultrasound_callback(self, space, arbiter):
-        #def begin_ultrasound_callback(space, arbiter):
-            #print(self, space, arbiter)
-            
             ent0_id = arbiter.shapes[0].body.data #detectable_object
-            ent1_id = arbiter.shapes[1].body.data #ultrasound
-            #self.info('ent0,1 = {} {}'.format(ent0_id, ent1_id))
-            #print('ultrasound ',  'id', us_id, 'state', state,)
-            #print(self.r.ent)
-            #self.pprint(dir(space))
-            #space.enable_contact_graph = 1
-            
-            us_name = self.r.ultrasound_detection(us_id, ent0_id, state)
-            #us_name = self.r.ultrasound_hit(ent1_id, ent0_id)
-            #self.info(self.r.ultrasound_states())
+            #ent1_id = arbiter.shapes[1].body.data #robot
+            self.r.ultrasound_detection(us_id, ent0_id, state)
             return False
         self.begin_ultrasound_callback[us_id] = types.MethodType(begin_ultrasound_callback, self)
         return self.begin_ultrasound_callback[us_id]
@@ -230,7 +241,7 @@ class TestGame(Widget):
         rob_ent = self.r.ent
         print(rob_ent)
         p = self.gameworld.system_manager['cymunk_physics']
-        self.pprint(dir(p))
+        #self.pprint(dir(p))
         
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
         #rob_body = rob_ent.cymunk_physics.body
@@ -256,19 +267,19 @@ class TestGame(Widget):
     def init_space_constraints(self):
         return 
         p = self.gameworld.system_manager['cymunk_physics']
-        self.pprint(dir(p))
+        #self.pprint(dir(p))
         
         space = p.space
-        self.pprint(dir(space))
+        #self.pprint(dir(space))
 
         rob_ent = self.r.ent
         rob = self.gameworld.entities[rob_ent]
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
         rob_renderer = rob.rotate_poly_renderer
-        print('rob_body')
-        self.pprint(dir(rob_body))
-        print('rob_renderer')
-        self.pprint(dir(rob_renderer))
+        #print('rob_body')
+        #self.pprint(dir(rob_body))
+        #print('rob_renderer')
+        #self.pprint(dir(rob_renderer))
         for us_ent in self.r.ultrasounds.keys():
             us = self.gameworld.entities[us_ent]
             usb = us.cymunk_physics.body
@@ -290,7 +301,7 @@ class TestGame(Widget):
             
             
 
-            self.pprint(dir(rob_body))
+            #self.pprint(dir(rob_body))
             h = rob_renderer.height/2
             rob_att = (0, h)
 
@@ -342,7 +353,7 @@ class TestGame(Widget):
         entity_info = object_info
 
         print('@'*42)
-        self.pprint(entity_info)
+        #self.pprint(entity_info)
         print(Robot.cats, category in Robot.cats)
 
         # add to specific subobjects
@@ -426,7 +437,7 @@ class DalekApp(App):
     ent_count = StringProperty('...')
     ultrasound_status = StringProperty('...')
     info_text = StringProperty('...')
-    damping = NumericProperty(0.5)
+    damping = NumericProperty(0.2)
     #def __init__(self, **kwargs):
      #   super(App, self).__init__(**kwargs)
       #  return

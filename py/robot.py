@@ -8,9 +8,14 @@ from logging import error as prine
 
 import time
 
+from cymunk import Vec2d
+#from cymunk import cpBodyLocal2World in body.
+#import cymunk
+#print(dir(cymunk))
+
 import random as rnd
 from random import randint, choice, randrange
-from math import radians, pi, sin, cos
+from math import radians, pi, sin, cos, sqrt, degrees
 import svgwrite as svg
 import glob
 
@@ -19,6 +24,69 @@ import json
 import os
 
 svg.profile = 'tiny'
+
+
+class Candy:
+
+    def __init__(self, root):
+        self.root = root
+        w, h = self.root.field_size
+        pos = [float(randint(0, s)) for s in [w, h]]
+        print('>>>', pos)
+        self.siz = (42., 42.)
+
+        #self.ent = self.create_candy(pos)
+        #self.create_asteroid(pos)
+        self.create_candy(pos)
+        self.body = self.root.gameworld.entities[self.ent].cymunk_physics.body
+
+    def create_candy(self, pos):
+        vel = (0., 0.) #randint(-15, 15)
+        angle = radians(randint(-360, 360))
+        angular_velocity = radians(randint(-1500, -1500))
+
+        cts = self.root.collision_types
+        siz = self.siz
+
+        mass = 10.
+        shape_dict = {
+            'inner_radius': 0, 'outer_radius': 20,
+            'mass': mass, 'offset': (0, 0)
+            }
+        col_shape = {
+            'shape_type': 'circle', 'elasticity': 1.0,
+            'collision_type': cts['candy'], 'shape_info': shape_dict, 'friction': 1.0
+            }
+
+        col_shapes = [col_shape]
+
+        physics_component = {'main_shape': 'circle',
+                            'velocity': vel,
+                            'position': pos, 'angle': angle,
+                            'angular_velocity': angular_velocity,
+                            'vel_limit': 250,
+                            'ang_vel_limit': radians(11200),
+                            'mass': mass, 'col_shapes': col_shapes
+                            }
+
+        component_dict = {
+            'cymunk_physics': physics_component,
+            'rotate_renderer': {
+                'texture': 'candy',
+                'size': siz,
+                'render': True
+                },
+            'position': pos,
+            'rotate': 0, }
+
+        component_order = ['position', 'rotate', 'rotate_renderer',
+            'cymunk_physics',]
+
+        cat = 'candy'
+
+        self.ent = self.root.gameworld.init_entity(component_dict, component_order)
+        #return self.root.init_entity(create_component_dict, component_order, cat)
+
 
 class UltrasoundSensor:
 
@@ -29,6 +97,94 @@ class UltrasoundSensor:
         self.detected = False
         prinf('UltrasoundSensor created and entangled: %s %s', us_id, name)
 
+
+class RobotMecanumControl:
+
+    def __init__(self, root, robot):
+        self.root = root
+        self.r = robot
+        
+        self.ang_vel_max = radians(30)
+
+        self.wheel_vectors = []
+        w, h = self.r.siz
+
+
+        #wheel = [position_of_wheel, vector_when_moving_wheel_in_frontal_direction 
+        self.wheels = [
+                [Vec2d(-w, +h), Vec2d(+1, +1)], # lf
+                [Vec2d(+w, +h), Vec2d(-1, +1)], # rf
+                [Vec2d(-w, -h), Vec2d(-1, +1)], # lb
+                [Vec2d(+w, -h), Vec2d(+1, +1)], # rb
+            ]
+
+    def set_ang_vel(self, ang_vel):
+        ang_vel = self.ang_vel_max if ang_vel > self.ang_vel_max else ang_vel
+
+        self.r.body.torque(ang_vel)
+
+
+    def calc_wheel_speed(self, vel_vec, ang_vel):
+        """Simple mecanum wheel control algorithm
+        
+        http://thinktank.wpi.edu/resources/346/ControllingMecanumDrive.pdf
+        """
+
+        vd = vel_vec.length
+        th = vel_vec.angle
+        dth = ang_vel 
+        
+        th45 = th + radians(45)
+        wheel_speeds = [
+                vd * sin(th45) + dth,
+                vd * cos(th45) - dth,
+                vd * cos(th45) + dth,
+                vd * sin(th45) - dth,
+            ]
+
+        return wheel_speeds
+
+    def apply_wheel_speed(self, wheel_speeds):
+        """wheel_speeds in range 0 - 1
+        
+        lf, rf, lb, rb
+        """
+        # rotate ccw
+        #wheel_speeds = [+1, +1, +1,+ 1] # go straight
+        #wheel_speeds = [+1, +0, +0, +1] # go front left 
+        #wheel_speeds = [+0, -1, -1, 0] # go back left 
+        #wheel_speeds = [+1, -1, -1, +1] # strafe left
+        wheel_speeds = [+1, -1, +1, -1] # rotate CW
+
+        imp_value = 1000 # strength of actuators
+
+        #print(self.wheels)
+        b = self.r.body
+        ori = b.angle
+        for v, wheel_speed in zip(self.wheels, wheel_speeds):
+            wheel_pos, wheel_force_dir = v
+            imp_vec = wheel_force_dir * imp_value * wheel_speed
+            
+            loc_wheel_pos = Vec2d(wheel_pos)
+            loc_imp_vec = Vec2d(imp_vec)
+            [v.rotate(ori) for v in [loc_wheel_pos, loc_imp_vec]]
+            print('wheel_pos')
+            print(loc_wheel_pos, wheel_pos)
+            b.apply_impulse(loc_imp_vec, loc_wheel_pos)
+        
+
+    def go(self, vel_vec, ang_vel):
+        ori = self.r.body.angle
+        
+        imp_value = 1000
+        imp_vec = vel_vec * imp_value
+        imp_vec.rotate(ori + radians(90))
+
+        imp_rot = ang_vel
+       # self.r.body.apply_impulse(imp_vec, imp_rot)
+
+        wheel_speeds = self.calc_wheel_speed(vel_vec, ang_vel)
+        self.apply_wheel_speed(wheel_speeds)
 
 class Robot:
 
@@ -47,6 +203,56 @@ class Robot:
         self.cts = root.collision_types
         self.drive = drive
         self.create_robot()
+
+        self.entity = self.root.gameworld.entities[self.ent]
+        self.body = self.entity.cymunk_physics.body
+
+        if drive == 'mecanum':
+            self.control = RobotMecanumControl(self.root, self)
+
+
+    def chase_candy(self, candy):
+        self.candy = candy
+        
+        self.t_body = self.candy.body
+
+    def camera_get_target(self):
+        """Returns relative position and orientation of target
+
+        possibly with simulated error
+        """
+       # pos = self.body.position
+       # t_pos = self.t_body.position
+       # t_dir = [t_xy - xy for xy, t_xy in zip(pos, t_pos)]
+
+        global_vec = self.t_body.position - self.body.position 
+        
+        ori = self.body.angle
+        rel_vec = global_vec
+        rel_vec.rotate(-ori - radians(90))
+        #print(degrees(rel_vec.angle))
+        return rel_vec
+
+    def goto_target(self):
+        imp = (100,100)
+         
+        rel_vec = self.camera_get_target()
+        
+        #print(dir(self.body))
+        #print(dir(self.body.position))
+        max_angle_dif = radians(10)
+
+        n_rel_vec = rel_vec.normalized()
+        ang_vel = 0
+        if abs(rel_vec.angle) > max_angle_dif:
+            ang_vel = -rel_vec.angle
+            vel_vec = n_rel_vec * 0.8 
+        else:
+            vel_vec = n_rel_vec
+
+        self.control.go(vel_vec, ang_vel)
+            
+
 
 
     def create_ultrasound(self, name, color, stroke_color, vert_list):
@@ -110,15 +316,13 @@ class Robot:
  #       self.stroke_color = '#000000'
 #        self.path = self.__svg_dir__ + 'robot.svg'
 
-        w, h = 1000,800
+        w, h = self.root.field_size
         
         pos = (randint(0, w), randint(0, h))
-        siz = [40, 60]
-        self.create_robot_rect('dalek', 100, pos, siz)
+        self.siz = [40, 60]
+        self.mass = 100
+        self.create_robot_rect('dalek', self.mass, pos, self.siz)
         
-        
-
-
     def create_robot_rect(self, name, mass, pos, siz):
         id_str = self.robot_name
         insert_pos = [pos[i] + siz[i]/2 for i in range(2)]
@@ -273,7 +477,7 @@ class Robot:
         self.ent = self.root.gameworld.init_entity(component_dict, component_order)
         print('>>>>>>', self.ent)
     def join_vert_models(self, model_list):
-        self.root.pprint(model_list)
+        #self.root.pprint(model_list)
         
         vertices = None
         indices = None
@@ -300,7 +504,7 @@ class Robot:
                 'indices': indices,
                 'vertices': vertices
                 }
-        self.root.pprint(joined)
+        #self.root.pprint(joined)
         return joined
         
         

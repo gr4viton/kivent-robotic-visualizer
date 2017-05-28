@@ -56,8 +56,7 @@ class Map2D:
 
         x0, y0 = 30,30 
         #w0, h0 = Ww-2*x0, Wh-2*y0
-        w0, h0 = 1000, 800
-        self.field_size = w0, h0
+        w0, h0 = self.root.field_size
         
         sizes = [(w0, t), (t, h0+2*t), (w0,t), (t, h0+2*t)]
         poss = [[0, -t], [w0, -t], [0, h0], [-t, -t]]
@@ -126,7 +125,7 @@ class Map2D:
         self.color = '#42ACDC'
         self.stroke_color = '#000000'
 
-        Fw, Fh = self.field_size
+        Fw, Fh = self.root.field_size
         
         w, h = Fw, Fh
         siz = (str(w), str(h))
@@ -165,7 +164,7 @@ class Map2D:
             color = (0, 128, 255, 255)
             v_count = randint(3, 5) + randint(0, 10)
             model_data = self.get_polyobstacle(pos, siz, v_count, color)
-            self.root.pprint(model_data)
+            #self.root.pprint(model_data)
 
             model_name = 'poly_obstacle' + str(v_count) + 'v' + str(time.time())
             model = model_manager.load_model(
@@ -369,9 +368,11 @@ class Map2D:
         tri_list = []
         angles = [radians(360*i/v_count) for i in range(v_count)]
         def get_randomized_angle(j, k, k_angle_offset=0):
-            return randint( 
-                    int(angles[j] * 100), 
-                    int((angles[k] + k_angle_offset) * 100)) / 100 
+            a_1 = angles[j]
+            a_2 = angles[k] + k_angle_offset
+            a_min = a_1
+            a_max = a_1 + (a_2 - a_1) * 0.8 # to not make it too convex
+            return randint(int(a_min * 100), int(a_max * 100)) / 100 
 
         angles = [get_randomized_angle(i, i+1) for i in range(len(angles)-1)]
         angles.append(get_randomized_angle(len(angles) - 1, 0, radians(360)))
