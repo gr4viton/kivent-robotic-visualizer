@@ -117,9 +117,12 @@ class Map2D:
 
     def draw_obstacles(self):
         self.create_obstacles()
+        #self.draw_rect_obstacles()
 
-    def draw_stuff(self):
-        self.draw_obstacles()
+    #def draw_stuff(self):
+        #self.draw_obstacles()
+        #self.draw_rect_obstacles()
+     #   pass
 
     def create_obstacles(self):
         self.color = '#42ACDC'
@@ -138,7 +141,11 @@ class Map2D:
         siz_interval = [one_siz_interval, one_siz_interval]
 
         model_manager = self.root.gameworld.model_manager
-        for i in range(10):
+        count = 10
+        start = int(time.time())
+        for i in range(count):
+            group = start - i
+            print(group)
 
             rnd.seed(time.time())   
             siz = [randint(*siz_interval[i]) for i in range(2)]
@@ -162,7 +169,7 @@ class Map2D:
                     }
 
             color = (0, 128, 255, 255)
-            v_count = randint(3, 5) + randint(0, 10)
+            v_count = randint(3, 5) + randint(0, 5)
             model_data = self.get_polyobstacle(pos, siz, v_count, color)
             #self.root.pprint(model_data)
 
@@ -183,6 +190,7 @@ class Map2D:
                         'elasticity': 0.6,
                         'collision_type': self.cts[cat],
                         'friction': 1.0,
+                        'group': group,
                         'shape_info': {
                             'mass': mass,
                             'offset': (0, 0),
@@ -231,6 +239,7 @@ class Map2D:
             #self.root.init_entity(component_dict, component_order, object_info=object_info)
         
             self.ent = self.root.gameworld.init_entity(component_dict, component_order)
+            self.root.add_entity(self.ent, cat)
             print('>>>>>>', self.ent)
         
 
@@ -240,7 +249,7 @@ class Map2D:
         self.stroke_color = '#000000'
         self.path = self.__svg_map_dir__ + 'map{}.svg'
 
-        Fw, Fh = self.field_size
+        Fw, Fh = self.root.field_size
         
         w, h = Fw, Fh
         siz = (str(w), str(h))
@@ -270,14 +279,14 @@ class Map2D:
   #          mass = randint(*mass_interval)
             dens = randrange(*dens_interval)
             mass = siz[0] * siz[1] * dens/1000
-            cat = 'obstacle'
+            cat = 'obstacle_rect'
             name = cat + str(i)
             info_dict = {
                         'mass': mass,
+                        'collision_type': self.cts[cat],
                         'object_info': {
                             'name': name,
                             'category': cat,
-                            'collision_type': self.cts[cat]
                         }
                     }
             # id is necessary attribut for the kivent svg loader!, also I use it for sharing info about the obstacle

@@ -78,7 +78,7 @@ TestGame:
             zones: ['touch']
             zone_to_use: 'touch'
             physics_system: 'cymunk_physics'
-            ignore_groups: root.ignore_groups #root.collision_types['ultrasound']
+            ignore_groups: root.ignore_groups  #root.collision_types['ultrasound']
             touch_radius: 30
             max_force: 2500000*10
         
@@ -141,8 +141,11 @@ TestGame:
         text: 'Apply impulse'
         on_release: app.root.kick_robot()
     Button:
-        text: 'Draw some stuff'
-        on_release: app.root.draw_some_stuff()
+        text: 'Draw poly obstacles'
+        on_release: app.root.draw_obstacles()
+    Button:
+        text: 'Draw rect obstacles'
+        on_release: app.root.draw_rect_obstacles()
 
     Button:
         text: 'Draw asteroids'
@@ -151,10 +154,12 @@ TestGame:
     #Button:
      #   text: 'Destroy all stuff'
       #  on_release: app.root.destroy_all_entities()
-        
+    ToggleButton:
+        text: 'Toggle robot mecanum control'
+        on_state: app.root.toggle_robot_control(self.state == 'down')
     Button:
         text: 'Destroy objects (not map)'
-        on_release: app.root.destroy_entities(skip_cat_list='walls')
+        on_release: app.root.destroy_entities(skip_cat_list=['wall', 'robot'])
 
     DebugPanel
 

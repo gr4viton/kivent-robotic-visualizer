@@ -85,18 +85,48 @@ class Candy:
         cat = 'candy'
 
         self.ent = self.root.gameworld.init_entity(component_dict, component_order)
+        self.root.add_entity(self.ent, cat)
         #return self.root.init_entity(create_component_dict, component_order, cat)
 
 
 class UltrasoundSensor:
 
-    def __init__(self, us_id, name, open_angle=None, distance_range=None, category='ultrasound', mass=None):
+    def __init__(self, robot, us_id, name, open_angle=None, distance_range=None, category='ultrasound', mass=None, us_pos=None):
         self.name = name
+        self.r = robot
         self.open_angle = open_angle
         self.distance_range = distance_range
         self.detected = False
+        self.us_pos = us_pos
         prinf('UltrasoundSensor created and entangled: %s %s', us_id, name)
+    
+        opa = 242
+        self.colors = {True: (255, 0, 0, opa), False: (0, 255, 0, opa)} 
+        self.v_inds = {'left': 8, 'middle': 11, 'right': 14}
 
+    def set_detected_state(self, state):
+        self.detected = state
+        # this for changing a vertex color (do it properly later.)
+        ind = self.v_inds[self.name]
+
+        rend_model = self.r.entity.rotate_poly_renderer.model[ind].v_color = self.colors[state]
+        #txu_manager = self.r.root.gameworld.texture_manager
+        #a = txu_manager.loaded_textures
+        #print('loaded_textures', a)
+        #a = txu_manager
+        ##print(a)
+        ##print(dir(a))
+
+        ##txu = txu_manager.get_texture_by_name('warning')
+        #txu = txu_manager.get_texkey_from_name('warning')
+        #a = rend_model
+        #print(a)
+        #print(dir(a))
+        #width, height = 100,100
+        #uvs = [0., 0., 1., 1.]
+        ##rend_model.set_textured_rectangle(width, height, uvs)
+       ## rend_model.set_textured_rectangle(txu)
+        #rend_model.flip_textured_rectangle_horizontally()
 
 class RobotMecanumControl:
 
@@ -108,7 +138,10 @@ class RobotMecanumControl:
 
         self.wheel_vectors = []
         w, h = self.r.siz
-
+        
+        #needs to be smaller as the impulses are detected by ultrasounds
+        a = 2/3
+        w, h = [w/a, h/a]
 
         #wheel = [position_of_wheel, vector_when_moving_wheel_in_frontal_direction 
         self.wheels = [
@@ -141,6 +174,9 @@ class RobotMecanumControl:
                 vd * cos(th45) + dth,
                 vd * sin(th45) - dth,
             ]
+        max_s = max(wheel_speeds)
+        if max_s > 1:
+            wheel_speeds = [s/max_s for s in wheel_speeds]
 
         return wheel_speeds
 
@@ -172,8 +208,15 @@ class RobotMecanumControl:
             #print(loc_wheel_pos, wheel_pos)
             b.apply_impulse(loc_imp_vec, loc_wheel_pos)
         
-
-    def go(self, vel_vec, ang_vel):
+    def go(self, vel_vec, ang_vel, direction=None):
+        if direction is not None:
+            side = 90
+            if direction.lower() == 'right':
+                vel_vec.rotate_degrees(side)
+            if direction.lower() == 'left':
+                vel_vec.rotate_degrees(360 - side)
+            if direction.lower() == 'backleft':
+                vel_vec.rotate_degrees(-120)
         wheel_speeds = self.calc_wheel_speed(vel_vec, ang_vel)
         self.apply_wheel_speed(wheel_speeds)
 
@@ -229,43 +272,52 @@ class Robot:
          
         rel_vec = self.camera_get_target()
         
-        #print(dir(self.body))
-        #print(dir(self.body.position))
         max_angle_dif = radians(10)
-        near_target_dist = 100
-
+        def get_length(x,y):
+            return sqrt(x*x + y*y)
+        near_target_dist = max([us.distance_range + get_length(*us.us_pos) 
+                                    for us in self.ultrasounds.values()]) * 1.2  
+            
+       # print(near_target_dist, '<<<near')
         n_rel_vec = rel_vec.normalized()
         ang_vel = 0
-        
 
         dets = self.ultrasound_detections()
+        
+        LR = dets==[True, False, True]
+        L = dets==[True, False, False]
+        R = dets==[False, False, True]
+        LM = dets==[True, True, False]
+        RM = dets==[False, True, True]
+        M = dets==[False, True, False]
+        ALL = all(dets)
+        NONE = not any(dets)
+
         assert len(dets)==3
         # if us_count is not 3, following algorithm may missbehave
-        if not any(dets):
-            if abs(rel_vec.angle) > max_angle_dif:
-                ang_vel = -rel_vec.angle
-                vel_vec = n_rel_vec * 0.8 
-            else:
-                vel_vec = n_rel_vec
+        if abs(rel_vec.angle) > max_angle_dif:
+            ang_vel = -rel_vec.angle
 
-            if rel_vec.length < near_target_dist:
-                ang_vel = ang_vel * 2
-                vel_vec = vel_vec * 0.5
+        if rel_vec.length < near_target_dist:
+            ang_vel = ang_vel * 1.5
+            vel_vec = n_rel_vec * 0.5
+            self.control.go(vel_vec, ang_vel)
         else:
-            if abs(rel_vec.angle) > max_angle_dif:
-                ang_vel = -rel_vec.angle
-            if all(dets):
-                vel_vec = n_rel_vec *.5
-            else:
-                vel_vec = n_rel_vec
-             #   vel_vec.rotate_degrees(90)
-            #if dets[0]:
-             #   vel_vec = n_rel_vec
-              #  vel_vec.rotate_degrees(90)
+            vel_vec = n_rel_vec
+            if NONE or LR:
+                self.control.go(vel_vec, ang_vel)
+            elif ALL or M:
+                #self.control.go(vel_vec, ang_vel, 'br')
+                #self.control.go(Vec2d(0,0), 10)
+                self.control.go(vel_vec, ang_vel, 'right')
+                return
+            elif L or LM:
+                self.control.go(vel_vec, ang_vel, 'right')
+                return
+            elif R or RM:
+                self.control.go(vel_vec, ang_vel, 'left')
+                return
 
-
-        self.control.go(vel_vec, ang_vel)
-            
 
 
 
@@ -297,12 +349,13 @@ class Robot:
         print(';;;;;;;;;;;;;;;;;;;;;', category)
 
         if category in 'ultrasound':
-            us = UltrasoundSensor(**entity_info)
+            us = UltrasoundSensor(self, **entity_info)
 #            self.ultrasounds.append()
             self.ultrasounds[entity_info['us_id']] = us
             print(entity_info['us_id'])
         #elif category in 'robot':
             #self.ent = entity_info['ent']
+
 
         #self.entities[category].append(ent)
 
@@ -317,15 +370,30 @@ class Robot:
     def ultrasound_miss(self, ultrasound_id, object_id):
         return self.ultrasound_detection(ultrasound_id, object_ent_id, False)
 
+    
     def ultrasound_detection(self, ultrasound_id, object_ent_id, state):
         us = self.ultrasounds[ultrasound_id]
-        us.detected = state
+        #us.detected = state
+        us.set_detected_state(state)
+
+        self.colors = {True: (0,0,0,255), False: (0,128,255,255)}
+        #print(object_ent_id)
+        #entity = self.root.entities[object_ent_id]
+        #print(entity)
+        #rend_model = entity.rotate_poly_renderer
+        #rend_model.model[ind].v_color = self.colors[state]
+
         return us.name
     
     def ultrasound_status(self):
         return '|'.join(['{}={}'.format(us.name, us.detected) for us in self.ultrasounds.values()])
 
+    def reset_ultrasounds(self):
+        for us in self.ultrasounds.values():
+            us.detected = False
+
     def ultrasound_detections(self):
+
         return [us.detected for us in self.ultrasounds.values()]
 
     def create_robot(self):
@@ -350,6 +418,8 @@ class Robot:
         
         cts = self.root.collision_types
 
+        robot_group = 42
+
         width, height = siz
         w, h = siz
         robot_verts = [
@@ -364,6 +434,7 @@ class Robot:
                 'elasticity': 0.6,
                 'collision_type': cts['robot'],
                 'friction': 1.0,
+                'group' : robot_group,
                 'shape_info': {
                     'mass': mass,
                     'offset': (0, 0),
@@ -373,10 +444,23 @@ class Robot:
 
         col_shapes = [robot_shape]
 
+        physics = {
+                'main_shape': 'poly',
+                'velocity': (0, 0),
+                'position': self.pos,
+                'angle': 0,
+                'angular_velocity': radians(0),
+                'ang_vel_limit': radians(0),
+                'mass': mass,
+                'col_shapes': col_shapes
+        }
+
+
+        
         open_angle = radians(45)
         count_ultrasounds = 3
-        names = ['right', 'middle', 'left' ]
-        ultrasound_range = 100
+        names = ['left', 'middle', 'right']
+        ultrasound_range = 60
         ultrasound_ranges = [ultrasound_range, ultrasound_range + 100]
         x0, y0 = self.pos[0] + 0, self.pos[1] + h/4
         center_x0, center_y0 = 0, h/2 
@@ -394,7 +478,7 @@ class Robot:
                      (1 + i) * open_angle - shift_angle)
             
             us_x = (i - (count_ultrasounds - 1)/2) * sensor_width 
-            us_y = 0
+            us_y = 15
             x0 = center_x0 + us_x
             y0 = center_y0 + us_y
             
@@ -405,14 +489,16 @@ class Robot:
 
             vert_list = [(x0, y0), edge_points[0], edge_points[1]]
             
-            mass = 0
+            mass = 0.1
             us_id = cts['ultrasound'][i]
 
             us_shape = {
                     'shape_type': 'poly',
-                    'elasticity': 0.6,
+                    'elasticity': 0.0,
                     'collision_type': us_id,
-                    'friction': 1.0,
+                    'friction': 0.0,
+                    'sensor': True,
+                    'group': robot_group,
                     'shape_info': {
                         'mass': mass,
                         'offset': (0, 0),
@@ -424,28 +510,22 @@ class Robot:
             entity_info = {
                 'category': 'ultrasound',
                 'us_id': us_id,
-                'name': names[i]
+                'name': names[i],
+                'distance_range': ultrasound_range,
+                'us_pos': (us_x, us_y),
             }
             
             us_color = (randint(100,200), 255*randint(8,10)/10, randint(100,100))
             us_model = self.get_triangle_data(vert_list, us_color, ultrasound_ranges)
             us_models.append(us_model)
 
-            self.add_entity(entity_info)
+           # self.root.add_entity(entity_info)
+            
+            us = UltrasoundSensor(self, **entity_info)
+            self.ultrasounds[entity_info['us_id']] = us
+            print(entity_info['us_id'])
+
         
-        mass = 200
-        physics = {
-                'main_shape': 'poly',
-                'velocity': (0, 0),
-                'position': self.pos,
-                'angle': 0,
-                'angular_velocity': radians(0),
-                'ang_vel_limit': radians(0),
-                'mass': mass,
-                'col_shapes': col_shapes
-        }
-
-
         model_name = robot_name
         model_manager = self.root.gameworld.model_manager
 
@@ -455,8 +535,8 @@ class Robot:
         
         rects = [rect_data, rect_data2]
         rects.extend(us_models)
-        model_data = self.join_vert_models(rects)
         
+        model_data = self.join_vert_models(rects)
         
         rectangle_model = model_manager.load_model(
                                             'vertex_format_2f4ub',
@@ -499,6 +579,8 @@ class Robot:
     
         self.ent = self.root.gameworld.init_entity(component_dict, component_order)
         print('>>>>>>', self.ent)
+        self.root.add_entity(self.ent, 'robot')
+
     def join_vert_models(self, model_list):
         #self.root.pprint(model_list)
         

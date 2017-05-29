@@ -105,26 +105,79 @@ class Entities(Mapping):
 class ScrollableLabel(ScrollView):
     text = StringProperty('')
 
+
+
+class CollisionControl:
+
+    def __init__(self, ultrasound_count):
+
+        self.ultrasound_count = ultrasound_count 
+
+        self.collision_objects = []
+        self.add_object_type('wall', 1)
+        self.add_object_type('obstacle', 2)
+        self.add_object_type('robot', 10)
+        self.add_object_type('candy', 42)
+      #  self.add_object_type('ultrasound
+
+        self.ultrasound_offset = 100
+        us_cts = [self.ultrasound_offset + i for i in range(ultrasound_count)]
+        self.add_category('ultrasound_cone', us_cts, False, False)
+    
+    def get_collision_types(self):
+        return {o.name: o.collision_type for o in self.collide_control.collision_objects}
+
+    def add_category(self, object_type, collision_type_list,
+            collide=True,
+            ultrasound_detectable=True,
+            ):
+        for ct in collision_type_list:
+            self.add_object_type(object_type, ct, collide, ultrasound_detectable)
+    
+    def add_object_type(self, object_type, collsion_type,
+            collide=True,
+            ultrasound_detectable=True,
+            ):
+        col_obj = {
+                'object_type': object_type,
+                'collision_type': collision_type,
+                'collide': collide,
+                'ultrasound_detectable': ultrasound_detectable
+                }
+        self.collision_objects.append(col_obj)
+
 class TestGame(Widget):
     
-    def __init__(self, **kwargs):
-        self.ultrasound_count = 10 
+    def init_collision_types(self):
+        self.ultrasound_count = 10
+
+        #self.collide_control = CollideControl(self.ultrasound_count)
+        #self.collision_types = self.collide_control.collision_types 
         self.collision_types = {
                 'wall': 1,
-                'obstacle' : 2,
+                'obstacle_rect' : 2,
+                'obstacle' : 3,
+                'asteroid' : 5,
                 'ultrasound_detectable' : 0,
                 'ultrasound' : [50 + i for i in range(self.ultrasound_count)],
-                'robot' : 9,
+                'robot' : 10,
+                'robot_B' : 11,
                 'candy' : 42,
                 }
-        detected_names = ['wall', 'obstacle', 'robot']
+
+        detected_names = ['wall', 'obstacle', 'obstacle_rect', 'robot_B']
         self.collision_types['ultrasound_detectable'] = list({self.collision_types[name] for name in detected_names}) 
         print('ultrasound_detectable')
         print(self.collision_types['ultrasound_detectable'])
-
+        
+        # ignore touch of user
         self.ignore_groups = []
         self.ignore_groups.extend(self.collision_types['ultrasound'])
-        [ self.ignore_groups.append(self.collision_types[key]) for key in ['robot']]
+        #[ self.ignore_groups.append(self.collision_types[key]) for key in ['robot']]
+        
+
+    def __init__(self, **kwargs):
+        self.init_collision_types()
         super(TestGame, self).__init__(**kwargs)
 
         self.gameworld.init_gameworld(
@@ -180,12 +233,17 @@ class TestGame(Widget):
         self.candy = Candy(self)
         #self.fl.load_svg(self.r.path, self.gameworld)
 
+    def toggle_robot_control(self, state):
+        self.robot_controlled = state
+
     def init_chase_candy_updater(self):
         self.r.chase_candy(self.candy)
+        self.robot_controlled = False
         Clock.schedule_once(self.chase_candy_update)
 
     def chase_candy_update(self, dt):
-        self.r.goto_target()
+        if self.robot_controlled:
+            self.r.goto_target()
         Clock.schedule_once(self.chase_candy_update, .05)
 
     def draw_asteroids(self):
@@ -207,35 +265,63 @@ class TestGame(Widget):
         self.begin_ultrasound_callback = {}
         #for us_id in range(self.ultrasound_count):
         for us_id in cts['ultrasound']:
+            for ignore in range(1024):
+            #for ignore in cts.values():
+                if type(ignore) is int: # not list
+                  #  if ignore not in cts['ultrasound_detectable']:
+                    physics_system.add_collision_handler(ignore, us_id, 
+                            begin_func=rfalse,
+                            separate_func=rfalse,
+                            )
+    
             for detectable in cts['ultrasound_detectable']:
                 print('us_id', us_id)
                 physics_system.add_collision_handler(
                     detectable, us_id,
+                   # pre_solve_func=self.return_begin_ultrasound_callback(us_id, True),
                     begin_func=self.return_begin_ultrasound_callback(us_id, True),
                     separate_func=self.return_begin_ultrasound_callback(us_id, False))
-            for ignore in cts.values():
-                if type(ignore) is int: # not list
-                    if ignore not in cts['ultrasound_detectable']:
-                        physics_system.add_collision_handler(ignore, us_id, begin_func=rfalse)
-    
+
+
     def return_begin_ultrasound_callback(self, us_id, state):
         # this adds the segmentation fault on exit - but currently I am not able to simulate ultrasounds any other way than 
         # returning 
         def begin_ultrasound_callback(self, space, arbiter):
-            ent0_id = arbiter.shapes[0].body.data #detectable_object
+            #ent0_id = arbiter.shapes[0].body.data #detectable_object
             #ent1_id = arbiter.shapes[1].body.data #robot
-            self.r.ultrasound_detection(us_id, ent0_id, state)
+            space.enable_contact_graph = True
+            #print(space.bodies)
+
+            ent0 = arbiter.shapes[0]
+            e_id = ent0.body.data
+            #a = ent0.body
+            #print(len(arbiter.shapes))
+            con = arbiter.contacts
+            #print(a)
+            #print(dir(a))
+            #print(a.contact)
+
+            if con is not None:
+                self.r.ultrasound_detection(us_id, ent0, state)
+                ent = self.gameworld.entities[e_id]
+                cat = [cat for cat, id_list in self.entities.items() if e_id in id_list]
+                print('detect', cat, e_id)
             return False
-        self.begin_ultrasound_callback[us_id] = types.MethodType(begin_ultrasound_callback, self)
-        return self.begin_ultrasound_callback[us_id]
+
+        ind = 2*us_id + int(state) 
+        self.begin_ultrasound_callback[ind] = types.MethodType(begin_ultrasound_callback, self)
+        return self.begin_ultrasound_callback[ind]
         #return begin_ultrasound_callback
 
     def add_entity(self, ent, category):
         # add to entity counter
+        print('added entity', category)
         if category not in self.entities.keys():
             self.entities[category] = []
         self.entities.add_item(category, ent)
     
+
+
     def set_robot_mid(self):
         rob_ent = self.r.ent
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
@@ -349,23 +435,22 @@ class TestGame(Widget):
             object_info = {}
 
         ent = self.gameworld.init_entity(component_dict, component_order)
-
+        
         # add to counter
         self.add_entity(ent, category)
 
         object_info.update({'ent': ent})
         entity_info = object_info
 
-        print('@'*42)
+        #print('@'*42)
         #self.pprint(entity_info)
-        print(Robot.cats, category in Robot.cats)
+        #print(Robot.cats, category in Robot.cats)
 
         # add to specific subobjects
-        if self.r is not None:
-            if category in Robot.cats:
-                self.r.add_entity(entity_info)
-                if category == 'robot':
-                    print('added robot')
+        #if self.r is not None:
+         #   self.r.add_entity(entity_info)
+          #      if category == 'robot':
+           #         print('added robot')
             
         return ent
 
@@ -397,12 +482,17 @@ class TestGame(Widget):
     def destroy_created_entity(self, ent_id, dt):
         self.gameworld.remove_entity(ent_id)
 
-    def draw_some_stuff(self):
+   # def draw_some_stuff(self):
      #   self.load_svg('objects.svg', self.gameworld)
         #self.load_svg('map.svg', self.gameworld)
-        self.map.draw_stuff()
+    #    self.map.draw_stuff()
  #       self.load_svg('map.svg', self.gameworld)
 
+    def draw_obstacles(self):
+        self.map.draw_obstacles()
+
+    def draw_rect_obstacles(self):
+        self.map.draw_rect_obstacles()
 
     def update(self, dt):
         self.gameworld.update(dt)
@@ -423,6 +513,7 @@ class TestGame(Widget):
 
     def update_ultrasound_status(self, dt):
         self.app.ultrasound_status = self.r.ultrasound_status()
+     #   self.r.reset_ultrasounds()
         Clock.schedule_once(self.update_ultrasound_status, .05)
 
 class DebugPanel(Widget):

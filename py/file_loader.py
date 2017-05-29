@@ -77,8 +77,8 @@ class FileLoader:
         mass = 50
         object_info = {'category': fname}
         category = fname
-        collision_type = 0
         name = None
+        collision_type = 0
 
         for info in data['model_info']:
             info, pos = self.normalize_info(info)
@@ -90,7 +90,6 @@ class FileLoader:
                 mass = float(info_dict.get('mass', mass))
                 object_info = info_dict.get('object_info', object_info)
                 collision_type = int(info_dict.get('collision_type', collision_type))
-
             #if massless:
             #    mass = float('inf')
             #    mass = float(0)
