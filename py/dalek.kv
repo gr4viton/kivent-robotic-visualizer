@@ -158,8 +158,8 @@ TestGame:
         text: 'Toggle robot mecanum control'
         on_state: app.root.toggle_robot_control(self.state == 'down')
     Button:
-        text: 'Destroy objects (not map)'
-        on_release: app.root.destroy_entities(skip_cat_list=['wall', 'robot'])
+        text: 'Destroy obstacles'
+        on_release: app.root.destroy_entities(skip_cat_list=['wall', 'robot', 'candy'])
 
     DebugPanel
 

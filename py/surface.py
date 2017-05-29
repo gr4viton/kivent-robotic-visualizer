@@ -43,30 +43,30 @@ class Map2D:
         for f in files:
             os.remove(f)
 
-    
+
     def draw_walls(self):
         Ww, Wh = Wsize = Window.size
         prinw(Wsize)
         self.root.info(Wsize)
-        
+
         self.wall_id = 0
         # thickness
         t = 125
         txu = 'warning'
 
-        x0, y0 = 30,30 
+        x0, y0 = 30,30
         #w0, h0 = Ww-2*x0, Wh-2*y0
         w0, h0 = self.root.field_size
-        
+
         sizes = [(w0, t), (t, h0+2*t), (w0,t), (t, h0+2*t)]
         poss = [[0, -t], [w0, -t], [0, h0], [-t, -t]]
         poss = [[pos[0] + x0, pos[1] + y0] for pos in poss]
-        
+
         for pos, size in zip(poss, sizes):
             self.create_wall(pos, size, txu)
 
-        
-    def create_wall(self, pos_lf, size, txu, name='wall'): 
+
+    def create_wall(self, pos_lf, size, txu, name='wall'):
         w, h = size
         cat = 'wall'
         pos = [pos_lf[i] + size[i]/2 for i in range(2)]
@@ -76,9 +76,9 @@ class Map2D:
 
         shape_dict = {'width': w, 'height': h, 'mass': mass, }
         col_shape = {
-                'shape_type': 'box', 
+                'shape_type': 'box',
                 'elasticity': 1.0,
-                'collision_type': self.cts[cat], 
+                'collision_type': self.cts[cat],
                 'shape_info': shape_dict, 'friction': 1.0
             }
         col_shapes = [col_shape]
@@ -101,7 +101,7 @@ class Map2D:
                 'position': pos,
                 'rotate': 0,
             }
-        
+
         name = cat + str(randint(0,100000))
         object_info = {
             'name': name,
@@ -111,12 +111,12 @@ class Map2D:
         self.wall_id += 1
         return self.root.init_entity(create_component_dict, component_order, object_info=object_info)
 
-    def draw_rect_obstacles(self):
-        fname = self.create_rect_obstacles()
+    def draw_rect_obstacles(self, count=10):
+        fname = self.create_rect_obstacles(count)
         self.root.fl.load_svg(fname, self.root.gameworld)
 
-    def draw_obstacles(self):
-        self.create_obstacles()
+    def draw_obstacles(self, count=10):
+        self.create_obstacles(count)
         #self.draw_rect_obstacles()
 
     #def draw_stuff(self):
@@ -124,12 +124,12 @@ class Map2D:
         #self.draw_rect_obstacles()
      #   pass
 
-    def create_obstacles(self):
+    def create_obstacles(self, count):
         self.color = '#42ACDC'
         self.stroke_color = '#000000'
 
         Fw, Fh = self.root.field_size
-        
+
         w, h = Fw, Fh
         siz = (str(w), str(h))
         print(siz)
@@ -141,13 +141,12 @@ class Map2D:
         siz_interval = [one_siz_interval, one_siz_interval]
 
         model_manager = self.root.gameworld.model_manager
-        count = 10
         start = int(time.time())
         for i in range(count):
             group = start - i
             print(group)
 
-            rnd.seed(time.time())   
+            rnd.seed(time.time())
             siz = [randint(*siz_interval[i]) for i in range(2)]
 
             pos_lf_interval = ((0, w - siz[0]), (0, h - siz[1]))
@@ -211,7 +210,7 @@ class Map2D:
             }
 
 
-        
+
             component_dict = {
                     'position': pos_of_shape,
                     'rotate_poly_renderer': {
@@ -221,7 +220,7 @@ class Map2D:
                         'rotate': radians(0),
                 }
 
-        
+
             cat = 'obstacle'
             info_dict = {
                     'mass': mass,
@@ -231,33 +230,33 @@ class Map2D:
                     },
                 }
             info_str = json.dumps(info_dict)
-            
+
             object_info = info_dict['object_info']
-            
+
             print('robot component creation')
             component_order = ['position', 'rotate', 'rotate_poly_renderer', 'cymunk_physics']
             #self.root.init_entity(component_dict, component_order, object_info=object_info)
-        
+
             self.ent = self.root.gameworld.init_entity(component_dict, component_order)
             self.root.add_entity(self.ent, cat)
             print('>>>>>>', self.ent)
-        
+
 
     # kivy - 12_drawing_shapes
-    def create_rect_obstacles(self):
+    def create_rect_obstacles(self, count):
         self.color = '#42ACDC'
         self.stroke_color = '#000000'
         self.path = self.__svg_map_dir__ + 'map{}.svg'
 
         Fw, Fh = self.root.field_size
-        
+
         w, h = Fw, Fh
         siz = (str(w), str(h))
         print(siz)
         self.dwg = None
         fname = self.path.format(time.time())
         self.dwg = svg.Drawing(fname, size=siz, baseProfile='full', debug=False,)
-        
+
  #       group = self.dwg.add(self.dwg.g(id='obstacles', fill=self.color))
 
         dens_interval = (900, 1000)
@@ -266,9 +265,9 @@ class Map2D:
         siz_min, siz_max = one_siz_interval = 0.01*smaller, 0.1* smaller
         siz_interval = [one_siz_interval, one_siz_interval]
 
-        for i in range(10):
+        for i in range(count):
 
-            rnd.seed(time.time())   
+            rnd.seed(time.time())
             #pos = siz = (100,100)
          #   rnd.seed(time.time())
             siz = [randint(*siz_interval[i]) for i in range(2)]
@@ -295,7 +294,7 @@ class Map2D:
             id_str = name
             color = self.color
             stroke_color = self.stroke_color
-            rect = self.dwg.rect(id=id_str, insert=pos, size=siz, 
+            rect = self.dwg.rect(id=id_str, insert=pos, size=siz,
                     fill=color, stroke=stroke_color,
                     description=info_str,
                     )
@@ -304,14 +303,14 @@ class Map2D:
             print('>>>>>>>>>>>>>>>>>>>>>>>>>>>ww')
 #            print(inspect.getfullargspec())
     #        group.add(rect)
-        
+
             self.dwg.add(rect)
 
         self.root.info('saving: ' + self.dwg.filename)
 
         self.dwg.save()
         return fname
-     
+
     # kivy - 12_drawing_shapes
     def get_layered_regular_polygon(levels, sides, middle_color,
                                     radius_color_dict, pos=(0., 0.)):
@@ -360,11 +359,11 @@ class Map2D:
             i += 1
         return {'indices': indices, 'vertices': all_verts,
                 'vertex_count': vert_count, 'index_count': ind_count}
-        
+
     @staticmethod
     def get_polyobstacle(pos, siz, v_count, color):
 
-        rnd.seed(time.time())   
+        rnd.seed(time.time())
         vert_count = 0
         ind_count = 0
         angles = [radians(randint(0, 360)) for i in range(v_count)]
@@ -381,7 +380,7 @@ class Map2D:
             a_2 = angles[k] + k_angle_offset
             a_min = a_1
             a_max = a_1 + (a_2 - a_1) * 0.8 # to not make it too convex
-            return randint(int(a_min * 100), int(a_max * 100)) / 100 
+            return randint(int(a_min * 100), int(a_max * 100)) / 100
 
         angles = [get_randomized_angle(i, i+1) for i in range(len(angles)-1)]
         angles.append(get_randomized_angle(len(angles) - 1, 0, radians(360)))
@@ -402,7 +401,7 @@ class Map2D:
                 inds = (0, v_count, 1)
                 indices.extend(inds)
                 tri_list.append([vert_positions[ind] for ind in inds])
-        
+
 
         vert_count = len(all_verts)
         ind_count = len(indices)
