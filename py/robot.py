@@ -212,12 +212,15 @@ class RobotMecanumControl:
     def go(self, vel_vec, ang_vel, direction=None):
         if direction is not None:
             side = 90
-            if direction.lower() == 'right':
-                vel_vec.rotate_degrees(side)
-            if direction.lower() == 'left':
-                vel_vec.rotate_degrees(360 - side)
-            if direction.lower() == 'backleft':
-                vel_vec.rotate_degrees(-120)
+            if type(direction) is str:
+                if direction.lower() == 'right':
+                    vel_vec.rotate_degrees(side)
+                if direction.lower() == 'left':
+                    vel_vec.rotate_degrees(360 - side)
+                if direction.lower() == 'backleft':
+                    vel_vec.rotate_degrees(-120)
+            else:
+                vel_vec.rotate_degrees(direction)
         wheel_speeds = self.calc_wheel_speed(vel_vec, ang_vel)
         self.apply_wheel_speed(wheel_speeds)
 
@@ -247,6 +250,7 @@ class Robot:
         self.poss = [None for i in range(self.state_count)]
         self.stuck_rel_vec = None
         self.stuck_angle = 110
+        self.stuck_counter = 0
         if drive == 'mecanum':
             self.control = RobotMecanumControl(self.root, self)
             
@@ -328,9 +332,11 @@ class Robot:
         
         ALL_sum = sum(1 for s in self.states if s=='ALL')
         M_sum = sum(1 for s in self.states if s=='M')
+        NONE_sum = sum(1 for s in self.states if s=='NONE')
 
         is_ALL = ALL_sum > self.state_count/2
         is_M = M_sum > self.state_count/2
+        is_NONE = NONE_sum > self.state_count/2
 
         if is_ALL:
             self.add_state('STUCK')
@@ -348,10 +354,15 @@ class Robot:
         print(sum_vec)
 
 
+        self.stuck_counter += int(is_stuck)
+        if self.stuck_counter > 50:
+            self.stuck_angle *= -1
+            self.stuck_counter = 0
+
         if sum_vec.length < stuck_sum:
             #if not is_stuck and not is_near:
             if not is_near:
-                if is_ALL or is_M:
+                if not is_NONE:
                     self.add_state('STUCK')
          #   else:
           #      self.stuck_angle *= -1
@@ -373,7 +384,7 @@ class Robot:
         
         if is_stuck:
             vel_vec = n_rel_vec 
-            self.control.go(vel_vec, ang_vel, 'right')
+            self.control.go(vel_vec, ang_vel, self.stuck_angle)
             return
 
         if is_near:
