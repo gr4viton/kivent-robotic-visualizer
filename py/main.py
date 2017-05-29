@@ -205,7 +205,7 @@ class TestGame(Widget):
         self.init_physicals()
         self.init_space_constraints()
 
-        self.init_ultrasound_status_updater()
+        self.init_properties_updater()
 
         self.init_control_logic()
 
@@ -235,6 +235,8 @@ class TestGame(Widget):
 
     def toggle_robot_control(self, state):
         self.robot_controlled = state
+        if state == True:
+            self.r.add_state('INIT')
 
     def init_chase_candy_updater(self):
         self.r.chase_candy(self.candy)
@@ -508,13 +510,14 @@ class TestGame(Widget):
         self.gameworld.state = 'main'
 
 
-    def init_ultrasound_status_updater(self):
-        Clock.schedule_once(self.update_ultrasound_status)
+    def init_properties_updater(self):
+        Clock.schedule_once(self.update_properties)
 
-    def update_ultrasound_status(self, dt):
+    def update_properties(self, dt):
         self.app.ultrasound_status = self.r.ultrasound_status()
+        self.app.robot_states = str(self.r.states)
      #   self.r.reset_ultrasounds()
-        Clock.schedule_once(self.update_ultrasound_status, .05)
+        Clock.schedule_once(self.update_properties, .05)
 
 class DebugPanel(Widget):
     fps = StringProperty(None)
@@ -531,6 +534,8 @@ class DebugPanel(Widget):
 class DalekApp(App):
     ent_count = StringProperty('...')
     ultrasound_status = StringProperty('...')
+    robot_states = StringProperty('...')
+
     info_text = StringProperty('...')
     damping = NumericProperty(0.2)
     #def __init__(self, **kwargs):

@@ -193,6 +193,7 @@ class RobotMecanumControl:
         #wheel_speeds = [+1, -1, +1, -1] # rotate CW
 
         imp_value = 1000 # strength of actuators
+        #imp_value = 500
 
         #print(self.wheels)
         b = self.r.body
@@ -240,10 +241,15 @@ class Robot:
 
         self.entity = self.root.gameworld.entities[self.ent]
         self.body = self.entity.cymunk_physics.body
-
+        
+        self.state_count = 20
+        self.states = [None for i in range(self.state_count)]
+        self.poss = [None for i in range(self.state_count)]
+        self.stuck_rel_vec = None
+        self.stuck_angle = 110
         if drive == 'mecanum':
             self.control = RobotMecanumControl(self.root, self)
-
+            
 
     def chase_candy(self, candy):
         self.candy = candy
@@ -266,8 +272,28 @@ class Robot:
         rel_vec.rotate(-ori - radians(90))
         #print(degrees(rel_vec.angle))
         return rel_vec
+    
+    def get_pos(self):
+        return self.body.position
+
+    def add_state(self, state):
+        self.states.append(state)
+        self.states.pop(0)
+        self.poss.append(self.body.velocity)
+        self.poss.pop(0)
+
+    def get_state(self, L,R,LR,LM,RM,M,ALL,NONE):
+        if L: return 'L'
+        if R: return 'R'
+        if LR: return 'LR'
+        if LM : return 'LM'
+        if RM: return 'RM'
+        if M: return 'M'
+        if ALL: return 'ALL'
+        if NONE: return 'NONE'
 
     def goto_target(self):
+    
         imp = (100,100)
          
         rel_vec = self.camera_get_target()
@@ -283,7 +309,8 @@ class Robot:
         ang_vel = 0
 
         dets = self.ultrasound_detections()
-        
+            
+
         LR = dets==[True, False, True]
         L = dets==[True, False, False]
         R = dets==[False, False, True]
@@ -292,14 +319,65 @@ class Robot:
         M = dets==[False, True, False]
         ALL = all(dets)
         NONE = not any(dets)
+        
+        state = self.get_state(L,R,LR,LM,RM,M,ALL,NONE)
+        self.add_state(state)
+       # print(self.states)
+       # print(self.poss)
+        
+        
+        ALL_sum = sum(1 for s in self.states if s=='ALL')
+        M_sum = sum(1 for s in self.states if s=='M')
+
+        is_ALL = ALL_sum > self.state_count/2
+        is_M = M_sum > self.state_count/2
+
+        if is_ALL:
+            self.add_state('STUCK')
+        if is_M:
+            self.add_state('STUCK')
+
+        is_stuck = 'STUCK' in self.states and not 'INIT' in self.states
+        is_near = rel_vec.length < near_target_dist
+
+        stuck_sum = 500
+        sum_vec = Vec2d(0,0)
+        for p in self.poss:
+            if p is not None:
+                sum_vec = sum_vec + p
+        print(sum_vec)
+
+
+        if sum_vec.length < stuck_sum:
+            #if not is_stuck and not is_near:
+            if not is_near:
+                if is_ALL or is_M:
+                    self.add_state('STUCK')
+         #   else:
+          #      self.stuck_angle *= -1
+            #self.stuck_rel_vec = rel_vec
+            #self.stuck_rel_vec.rotate(self.stuck_angle)
 
         assert len(dets)==3
         # if us_count is not 3, following algorithm may missbehave
-        if abs(rel_vec.angle) > max_angle_dif:
-            ang_vel = -rel_vec.angle
 
-        if rel_vec.length < near_target_dist:
-            ang_vel = ang_vel * 1.5
+
+        is_stuck = 'STUCK' in self.states and not 'INIT' in self.states
+
+        if is_stuck and not is_near:
+            #rel_vec = self.stuck_rel_vec
+            rel_vec.rotate_degrees(self.stuck_angle)
+
+        if abs(rel_vec.angle) > max_angle_dif:
+            ang_vel = -(rel_vec.angle)*0.4
+        
+        if is_stuck:
+            vel_vec = n_rel_vec 
+            self.control.go(vel_vec, ang_vel, 'right')
+            return
+
+        if is_near:
+            ang_vel = ang_vel * 5.5
             vel_vec = n_rel_vec * 0.5
             self.control.go(vel_vec, ang_vel)
         else:
@@ -478,7 +556,7 @@ class Robot:
                      (1 + i) * open_angle - shift_angle)
             
             us_x = (i - (count_ultrasounds - 1)/2) * sensor_width 
-            us_y = 15
+            us_y = 1
             x0 = center_x0 + us_x
             y0 = center_y0 + us_y
             
