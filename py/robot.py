@@ -104,6 +104,8 @@ class UltrasoundSensor:
     def __init__(self, robot, us_id, name, open_angle=None, distance_range=None, category='ultrasound', mass=None, us_pos=None):
         self.name = name
         self.r = robot
+        self.us_id = us_id
+
         self.open_angle = open_angle
         self.distance_range = distance_range
         self.detected = False
@@ -238,9 +240,11 @@ class Robot:
 
     cats = ['ultrasound', 'robot']
 
-    def __init__(self, root, drive, robot_name='robot'):
+    def __init__(self, root, drive, robot_name='robot', us_id_offset=0, robot_number=0):
         self.root = root
         self.robot_name = robot_name
+        self.us_id_offset = us_id_offset
+        self.robot_number = robot_number
 
         self.baseProfile = 'tiny' # 'full'
         self.__svg_dir__ = '../assets/objects/svg/'
@@ -264,6 +268,10 @@ class Robot:
         if drive == 'mecanum':
             self.control = RobotMecanumControl(self.root, self)
 
+    def is_this_us_mine(self, us_id):
+        for us in self.ultrasounds.values():
+            if us.us_id == us_id:
+                return True
 
     def chase_candy(self, candy):
         self.candy = candy
@@ -516,9 +524,10 @@ class Robot:
         pos = (randint(0, w), randint(0, h))
         self.siz = [40, 60]
         self.mass = 100
-        self.create_robot_rect('dalek', self.mass, pos, self.siz)
 
-    def create_robot_rect(self, name, mass, pos, siz):
+        self.create_robot_rect(self.robot_name, self.mass, pos, self.siz, self.us_id_offset, self.robot_number)
+
+    def create_robot_rect(self, name, mass, pos, siz, us_id_offset, robot_number):
         id_str = self.robot_name
         insert_pos = [pos[i] + siz[i]/2 for i in range(2)]
         #self.pos = insert_pos
@@ -527,8 +536,8 @@ class Robot:
         robot_name = name
 
         cts = self.root.collision_types
-
-        robot_group = 42
+        self.ct = cts['robot'] + robot_number
+        #robot_group = 42
 
         width, height = siz
         w, h = siz
@@ -542,9 +551,9 @@ class Robot:
         robot_shape = {
                 'shape_type': 'poly',
                 'elasticity': 0.6,
-                'collision_type': cts['robot'],
+                'collision_type': self.ct,
                 'friction': 1.0,
-                'group' : robot_group,
+         #       'group' : robot_group,
                 'shape_info': {
                     'mass': mass,
                     'offset': (0, 0),
@@ -600,7 +609,7 @@ class Robot:
             vert_list = [(x0, y0), edge_points[0], edge_points[1]]
 
             mass = 0.1
-            us_id = cts['ultrasound'][i]
+            us_id = cts['ultrasound'][i] + us_id_offset
 
             us_shape = {
                     'shape_type': 'poly',
@@ -608,7 +617,7 @@ class Robot:
                     'collision_type': us_id,
                     'friction': 0.0,
                     'sensor': True,
-                    'group': robot_group,
+                    #'group': robot_group,
                     'shape_info': {
                         'mass': mass,
                         'offset': (0, 0),
@@ -726,15 +735,20 @@ class Robot:
 
     @staticmethod
     def get_rectangle_data(height, width):
+        def _rnd():
+            return randint(0, 255)
+        def c_rnd():
+            return (_rnd(), _rnd(), _rnd(), 255)
+
         return {
                 'vertices': {0: {'pos': (-width/2., -height/2.),
-                                 'v_color': (255, 0, 0, 255)},
+                                 'v_color': c_rnd()},
                              1: {'pos': (-width/2., height/2.),
-                                 'v_color': (0, 255, 0, 255)},
+                                 'v_color': c_rnd()},
                              2: {'pos': (width/2., height/2.),
-                                 'v_color': (0, 0, 255, 255)},
+                                 'v_color': c_rnd()},
                              3: {'pos': (width/2., -height/2.),
-                                 'v_color': (255, 0, 255, 255)}
+                                 'v_color': c_rnd()}
                             },
                 'indices': [0, 1, 2, 2, 3, 0],
                 'vertex_count': 4,

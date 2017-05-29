@@ -160,8 +160,8 @@ class TestGame(Widget):
                 'asteroid' : 5,
                 'ultrasound_detectable' : 0,
                 'ultrasound' : [50 + i for i in range(self.ultrasound_count)],
-                'robot' : 10,
-                'robot_B' : 11,
+                'robot' : 100, # let it be free after robot for num of robot create
+
                 'candy' : 42,
                 }
 
@@ -199,12 +199,14 @@ class TestGame(Widget):
         self.to_draw_obstacles = 0
 
         self.r = None
+        self.rs = None
+
         self.setup_states()
         self.set_state()
         self.init_loaders()
         print('init_physicals')
         self.init_physicals()
-        self.init_space_constraints()
+        #self.init_space_constraints()
 
         self.init_properties_updater()
 
@@ -218,6 +220,9 @@ class TestGame(Widget):
 
     def init_physicals(self):
 #        self._entities = {}
+        self.robot_names = ['dalek', 'drWho']
+        self.num_of_robots = len(self.robot_names)
+
         self.setup_collision_callbacks()
 
         self.entities = Entities(self.app)
@@ -225,11 +230,15 @@ class TestGame(Widget):
         self.map = Map2D(self)
 
         self.asteroids = Asteroids(self)
-        self.init_robot()
+        self.init_robots()
 
 
-    def init_robot(self):
-        self.r = Robot(self, drive='mecanum')
+    def init_robots(self):
+
+        #self.r = Robot(self, drive='mecanum')
+        drive = 'mecanum'
+        us_count = 3
+        self.rs = [Robot(self, drive, name, i*us_count, i) for i, name in enumerate(self.robot_names)]
 
         self.candy = Candy(self)
         #self.fl.load_svg(self.r.path, self.gameworld)
@@ -237,17 +246,20 @@ class TestGame(Widget):
     def toggle_robot_control(self, state):
         self.robot_controlled = state
         if state == True:
-            self.r.add_state('INIT')
-            self.r.reset_ultrasounds()
+            for r in self.rs:
+                r.add_state('INIT')
+                r.reset_ultrasounds()
 
     def init_chase_candy_updater(self):
-        self.r.chase_candy(self.candy)
+        for r in self.rs:
+            r.chase_candy(self.candy)
         self.robot_controlled = False
         Clock.schedule_once(self.chase_candy_update)
 
     def chase_candy_update(self, dt):
         if self.robot_controlled:
-            self.r.goto_target()
+            for r in self.rs:
+                r.goto_target()
         Clock.schedule_once(self.chase_candy_update, .05)
 
     def draw_asteroids(self):
@@ -266,31 +278,37 @@ class TestGame(Widget):
              return False
         #collide_remove_first
 
+        # add robots
+        us_detectable = cts['ultrasound_detectable']
+        rob_cts = [cts['robot'] + ct for ct in range(self.num_of_robots)]
+        us_detectable.extend(rob_cts)
+
         self.begin_ultrasound_callback = {}
         #for us_id in range(self.ultrasound_count):
         for us_id in cts['ultrasound']:
             for ignore in range(1024):
-            #for ignore in cts.values():
                 if type(ignore) is int: # not list
-                  #  if ignore not in cts['ultrasound_detectable']:
+
+                    # if ignore not in cts['ultrasound_detectable']:
                     physics_system.add_collision_handler(ignore, us_id,
-                            begin_func=rfalse,
-                            separate_func=rfalse,
+                                begin_func=rfalse,
+                                separate_func=rfalse,
                             )
 
-            for detectable in cts['ultrasound_detectable']:
+
+            for detectable in us_detectable:
                 print('us_id', us_id)
                 physics_system.add_collision_handler(
-                    detectable, us_id,
-                   # pre_solve_func=self.return_begin_ultrasound_callback(us_id, True),
-                    begin_func=self.return_begin_ultrasound_callback(us_id, True),
-                    separate_func=self.return_begin_ultrasound_callback(us_id, False))
+                        detectable, us_id,
+                        begin_func=self.return_begin_ultrasound_callback(us_id, True),
+                        separate_func=self.return_begin_ultrasound_callback(us_id, False)
+                    )
 
-
-        physics_system.add_collision_handler(
-                cts['candy'], cts['robot'],
-                begin_func=self.begin_candy_callback,
-                separate_func=self.begin_candy_callback
+        for r_ct in rob_cts:
+            physics_system.add_collision_handler(
+                    cts['candy'], r_ct,
+                    begin_func=self.begin_candy_callback,
+                    separate_func=self.begin_candy_callback
                 )
 
     def candy_caught(self, robot_ent_id):
@@ -305,6 +323,19 @@ class TestGame(Widget):
         #us[us_id] = rob
         self.candy_caught(robot_ent_id)
         return False
+
+    def get_robot_from_us_id(self, us_id):
+        for r in self.rs:
+            if r.is_this_us_mine(us_id):
+                return r
+        return None
+
+    def get_robot_from_ent_id(self, robot_id):
+        for r in self.rs:
+            if r.ent == robot_id:
+                return r
+        return None
+
 
     def return_begin_ultrasound_callback(self, us_id, state):
         # this adds the segmentation fault on exit - but currently I am not able to simulate ultrasounds any other way than
@@ -323,9 +354,13 @@ class TestGame(Widget):
             #print(a)
             #print(dir(a))
             #print(a.contact)
+            rob_ent = arbiter.shapes[1].body.data
 
             if con is not None:
-                self.r.ultrasound_detection(us_id, ent0, state)
+                r = self.get_robot_from_ent_id(rob_ent)
+
+               # r = self.get_robot_from_us_id(us_id)
+                r.ultrasound_detection(us_id, ent0, state)
                 ent = self.gameworld.entities[e_id]
                 cat = [cat for cat, id_list in self.entities.items() if e_id in id_list]
                 #print('detect', cat, e_id)
@@ -344,14 +379,22 @@ class TestGame(Widget):
         self.entities.add_item(category, ent)
 
 
+    def set_robots_rand(self, r):
+        for r in self.rs:
+            self.set_robot_rand(r)
 
-    def set_robot_mid(self):
-        rob_ent = self.r.ent
-        rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
-        rob_body.position = (100,100)
 
-    def kick_robot(self):
-        rob_ent = self.r.ent
+    def set_robot_rand(self, r):
+            rob_ent = self.r.ent
+            rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
+            rob_body.position = self.candy.get_rand_pos()
+
+    def kick_robots(self):
+        for r in self.rs:
+            self.kick_robot(r)
+
+    def kick_robot(self, r):
+        rob_ent = r.ent
         print(rob_ent)
         p = self.gameworld.system_manager['cymunk_physics']
         #self.pprint(dir(p))
@@ -366,90 +409,6 @@ class TestGame(Widget):
         rob_body.apply_impulse(imp)
         print('impulse', imp)
 
-        #p.querry_segment((x,y),(x,y))
-        #if len(hits) > 0:
-        #    ent = entities[hits[0][0]]
-        #    ent.color.r = 0
-        #    self.app.selected_id = ent.entity_id
-        #    gameview.entity_to_focus = ent.entity_id
-        #    gameview.focus_entity = True
-        #else:
-        #    self.app.selected = None
-        #    gameview.focus_entity = False
-
-    def init_space_constraints(self):
-        return
-        p = self.gameworld.system_manager['cymunk_physics']
-        #self.pprint(dir(p))
-
-        space = p.space
-        #self.pprint(dir(space))
-
-        rob_ent = self.r.ent
-        rob = self.gameworld.entities[rob_ent]
-        rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
-        rob_renderer = rob.rotate_poly_renderer
-        #print('rob_body')
-        #self.pprint(dir(rob_body))
-        #print('rob_renderer')
-        #self.pprint(dir(rob_renderer))
-        for us_ent in self.r.ultrasounds.keys():
-            us = self.gameworld.entities[us_ent]
-            usb = us.cymunk_physics.body
-            kwargs = {#'rest_length': 10,
-			'stiffness': 10,
-		        'damping': 0.1}
-            b1 = rob_body
-            b2 = usb
-            joint_type = 'DampedSpring'
-            cymunk = kivent_cymunk.physics.cymunk
-            print(dir(cymunk))
-         #   print(cymunk.DampedSpring.__init__.__code__.co_varnames)
-
-            an1 = (0,0)
-            an4 = (10, -10)
-            an5 = (10, 10)
-            an2 = (100,-100)
-            an3 = (100,100)
-
-
-
-            #self.pprint(dir(rob_body))
-            h = rob_renderer.height/2
-            rob_att = (0, h)
-
-
-
-            anchor_pairs = ((an1, an1), (an2, an4), (an2, an5))
-            anchor_pairs = ((an1, an1), (an1, an2), (an1, an3))
-
-            A = ((100, 0), (10, 100))
-            B = ((-100, 0), (-10, 100))
-            C = ((0, -100), (0, 100))
-
-            anchor_pairs = (A,B,C)
-
-            A = ((-20, 0), (-10, 0))
-            B = ((20, 0), (10, 0))
-            C = ((0, -20), (0, -10))
-            anchor_pairs = (A,B)
-            for anchor_pair in anchor_pairs:
-                anch1, anch2 = anchor_pair
-                con = cymunk.PinJoint(b1, b2, anch1, anch2)
-                space.add_constraint(con)
-
-            break
-            #anchor_pair =
-                #con = cymunk.DampedSpring(b1, b2, anch1, anch2, joint_type, **kwargs)
-
-#    @property
- #   def entities(self):
-  #      return self._entities
-
-   # @entities.setter
-    #def entities(self, value):
-     #   self.app.ent_count = '\n'.join(['{}={}'.format(key, len(val)) for key, val in self.entities.items()])
-      #  self._entities = value
 
     def init_entity(self, component_dict, component_order, category='default_category', object_info=None):
         if object_info is not None:
@@ -499,7 +458,8 @@ class TestGame(Widget):
                 for ent in ent_list:
                     self.destroy_created_entity(ent, 0)
                 self.entities[ent_cat].clear()
-        self.r.reset_ultrasounds()
+        for r in self.rs:
+            r.reset_ultrasounds()
 
 
     def destroy_created_entity(self, ent_id, dt):
@@ -535,8 +495,8 @@ class TestGame(Widget):
         Clock.schedule_once(self.update_properties)
 
     def update_properties(self, dt):
-        self.app.ultrasound_status = self.r.ultrasound_status()
-        self.app.robot_states = str(self.r.states)
+        self.app.ultrasound_status = '\n'.join([r.ultrasound_status() for r in self.rs])
+        self.app.robot_states = '\n\n'.join([str(r.states) for r in self.rs])
  #       self.app.robot_score =
      #   self.r.reset_ultrasounds()
         if self.to_draw_obstacles > 0:

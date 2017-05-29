@@ -132,34 +132,40 @@ TestGame:
  #   size_hint: 1, 1 
  #   size_hint_y: 0.1
 
+<ButtonS@Button>
+ #   size_hint_y: 0.5
+
 <InfoPanel@ColoredGridLayout>:
     cols: 1
-    Button:
-        text: 'Set robot mid'
-        on_release: app.root.set_robot_mid()
-    Button:
-        text: 'Apply impulse'
-        on_release: app.root.kick_robot()
-    Button:
+    ToggleButton:
+        text: 'Toggle robot mecanum control'
+        on_state: app.root.toggle_robot_control(self.state == 'down')
+
+    ButtonS:
         text: 'Draw poly obstacles'
         on_release: app.root.draw_obstacles()
-    Button:
+    ButtonS:
         text: 'Draw rect obstacles'
         on_release: app.root.draw_rect_obstacles()
 
-    Button:
+    ButtonS:
+        text: 'Destroy obstacles'
+        on_release: app.root.destroy_entities(skip_cat_list=['wall', 'robot', 'candy'])
+
+    ButtonS:
+        text: 'Set robot mid'
+        on_release: app.root.set_robots_rand()
+    ButtonS:
+        text: 'Apply impulse'
+        on_release: app.root.kick_robots()
+
+    ButtonS:
         text: 'Draw asteroids'
         on_release: app.root.draw_asteroids()
 
     #Button:
      #   text: 'Destroy all stuff'
       #  on_release: app.root.destroy_all_entities()
-    ToggleButton:
-        text: 'Toggle robot mecanum control'
-        on_state: app.root.toggle_robot_control(self.state == 'down')
-    Button:
-        text: 'Destroy obstacles'
-        on_release: app.root.destroy_entities(skip_cat_list=['wall', 'robot', 'candy'])
 
     DebugPanel
 
