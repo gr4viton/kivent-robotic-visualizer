@@ -195,7 +195,7 @@ class TestGame(Widget):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.pprint = self.pp.pprint
 
-        self.field_size = 1000,800
+        self.field_size = 930,600
         self.to_draw_obstacles = 0
 
         self.r = None
@@ -314,7 +314,7 @@ class TestGame(Widget):
     def candy_caught(self, robot_ent_id):
         print('candy eaten! by robot:', robot_ent_id )
         self.candy.reset_position()
-        self.to_draw_obstacles = 3
+        self.to_draw_obstacles = 2
 
 
     def begin_candy_callback(self, space, arbiter):

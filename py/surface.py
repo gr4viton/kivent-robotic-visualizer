@@ -137,7 +137,7 @@ class Map2D:
         dens_interval = (900, 1000)
  #       mass_interval = (1000, 5000)
         smaller = h if h<=w else w
-        siz_min, siz_max = one_siz_interval = 0.01*smaller, 0.1* smaller
+        siz_min, siz_max = one_siz_interval = 0.01*smaller, 0.08* smaller
         siz_interval = [one_siz_interval, one_siz_interval]
 
         model_manager = self.root.gameworld.model_manager
