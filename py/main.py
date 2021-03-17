@@ -195,7 +195,7 @@ class TestGame(Widget):
         self.pp = pprint.PrettyPrinter(indent=4)
         self.pprint = self.pp.pprint
 
-        self.field_size = 930,600
+        self.field_size = 1930,1600
         self.to_draw_obstacles = 0
 
         self.r = None
