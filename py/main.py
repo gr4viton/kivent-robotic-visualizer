@@ -59,11 +59,13 @@ def get_asset_path(asset, asset_loc):
 #    args_names = fn.__code__.co_varnames[:fn.__code__.co_argcount]
 #    return {**dict(zip(args_names, args)), **kwargs}
 
-texture_manager.load_atlas(get_asset_path('background_objects.atlas', 'assets'))
+texture_manager.load_atlas(
+    get_asset_path("background_objects.atlas", "assets")
+)
 # texture_manager.load_atlas(get_asset_path('dalek_objects.atlas','assets'))
 # texture_manager.load_atlas(join(atlas_dir, 'robot_objects.atlas'))
 
-print(join(dirname(dirname(abspath(__file__))), 'assets', 'glsl'))
+print(join(dirname(dirname(abspath(__file__))), "assets", "glsl"))
 
 
 class Entities(Mapping):
@@ -97,7 +99,12 @@ class Entities(Mapping):
         return ret
 
     def update_count(self):
-        self.app.ent_count = '\n'.join(['{}={}'.format(key, len(val)) for key, val in self._storage.items()])
+        self.app.ent_count = "\n".join(
+            [
+                "{}={}".format(key, len(val))
+                for key, val in self._storage.items()
+            ]
+        )
 
     def __str__(self):
         self.update_count()
@@ -105,7 +112,7 @@ class Entities(Mapping):
 
 
 class ScrollableLabel(ScrollView):
-    text = StringProperty('')
+    text = StringProperty("")
 
 
 class CollisionControl:
@@ -114,29 +121,46 @@ class CollisionControl:
         self.ultrasound_count = ultrasound_count
 
         self.collision_objects = []
-        self.add_object_type('wall', 1)
-        self.add_object_type('obstacle', 2)
-        self.add_object_type('robot', 10)
-        self.add_object_type('candy', 42)
+        self.add_object_type("wall", 1)
+        self.add_object_type("obstacle", 2)
+        self.add_object_type("robot", 10)
+        self.add_object_type("candy", 42)
         #  self.add_object_type('ultrasound
 
         self.ultrasound_offset = 100
         us_cts = [self.ultrasound_offset + i for i in range(ultrasound_count)]
-        self.add_category('ultrasound_cone', us_cts, False, False)
+        self.add_category("ultrasound_cone", us_cts, False, False)
 
     def get_collision_types(self):
-        return {o.name: o.collision_type for o in self.collide_control.collision_objects}
+        return {
+            o.name: o.collision_type
+            for o in self.collide_control.collision_objects
+        }
 
-    def add_category(self, object_type, collision_type_list, collide=True, ultrasound_detectable=True):
+    def add_category(
+        self,
+        object_type,
+        collision_type_list,
+        collide=True,
+        ultrasound_detectable=True,
+    ):
         for ct in collision_type_list:
-            self.add_object_type(object_type, ct, collide, ultrasound_detectable)
+            self.add_object_type(
+                object_type, ct, collide, ultrasound_detectable
+            )
 
-    def add_object_type(self, object_type, collsion_type, collide=True, ultrasound_detectable=True):
+    def add_object_type(
+        self,
+        object_type,
+        collsion_type,
+        collide=True,
+        ultrasound_detectable=True,
+    ):
         col_obj = {
-            'object_type': object_type,
-            'collision_type': collision_type,
-            'collide': collide,
-            'ultrasound_detectable': ultrasound_detectable,
+            "object_type": object_type,
+            "collision_type": collision_type,
+            "collide": collide,
+            "ultrasound_detectable": ultrasound_detectable,
         }
         self.collision_objects.append(col_obj)
 
@@ -148,24 +172,26 @@ class TestGame(Widget):
         # self.collide_control = CollideControl(self.ultrasound_count)
         # self.collision_types = self.collide_control.collision_types
         self.collision_types = {
-            'wall': 1,
-            'obstacle_rect': 2,
-            'obstacle': 3,
-            'asteroid': 5,
-            'ultrasound_detectable': 0,
-            'ultrasound': [50 + i for i in range(self.ultrasound_count)],
-            'robot': 100,  # let it be free after robot for num of robot create
-            'candy': 42,
+            "wall": 1,
+            "obstacle_rect": 2,
+            "obstacle": 3,
+            "asteroid": 5,
+            "ultrasound_detectable": 0,
+            "ultrasound": [50 + i for i in range(self.ultrasound_count)],
+            "robot": 100,  # let it be free after robot for num of robot create
+            "candy": 42,
         }
 
-        detected_names = ['wall', 'obstacle', 'obstacle_rect', 'robot']
-        self.collision_types['ultrasound_detectable'] = list({self.collision_types[name] for name in detected_names})
-        print('ultrasound_detectable')
-        print(self.collision_types['ultrasound_detectable'])
+        detected_names = ["wall", "obstacle", "obstacle_rect", "robot"]
+        self.collision_types["ultrasound_detectable"] = list(
+            {self.collision_types[name] for name in detected_names}
+        )
+        print("ultrasound_detectable")
+        print(self.collision_types["ultrasound_detectable"])
 
         # ignore touch of user
         self.ignore_groups = []
-        self.ignore_groups.extend(self.collision_types['ultrasound'])
+        self.ignore_groups.extend(self.collision_types["ultrasound"])
         # [ self.ignore_groups.append(self.collision_types[key]) for key in ['robot']]
 
     def __init__(self, **kwargs):
@@ -174,27 +200,27 @@ class TestGame(Widget):
 
         self.gameworld.init_gameworld(
             [
-                'cymunk_physics',
-                'poly_renderer',
-                'rotate_poly_renderer',
-                'rotate_renderer',
+                "cymunk_physics",
+                "poly_renderer",
+                "rotate_poly_renderer",
+                "rotate_renderer",
                 #'steering_system'
-                'rotate',
-                'position',
-                'cymunk_touch',
+                "rotate",
+                "position",
+                "cymunk_touch",
             ],
             callback=self.init_game,
         )
 
     def info(self, text):
-        self.app.info_text += '\n' + str(text)
+        self.app.info_text += "\n" + str(text)
 
     def init_game(self):
         # called automatically? probably
         self.pp = pprint.PrettyPrinter(indent=4)
         self.pprint = self.pp.pprint
 
-        self.field_size = 1930, 1600
+        self.field_size = 800, 600
         self.to_draw_obstacles = 0
 
         self.r = None
@@ -203,7 +229,7 @@ class TestGame(Widget):
         self.setup_states()
         self.set_state()
         self.init_loaders()
-        print('init_physicals')
+        print("init_physicals")
         self.init_physicals()
         # self.init_space_constraints()
 
@@ -219,7 +245,7 @@ class TestGame(Widget):
 
     def init_physicals(self):
         #        self._entities = {}
-        self.robot_names = ['dalek', 'drWho']
+        self.robot_names = ["dalek", "drWho"]
         self.num_of_robots = len(self.robot_names)
 
         self.setup_collision_callbacks()
@@ -234,9 +260,12 @@ class TestGame(Widget):
     def init_robots(self):
 
         # self.r = Robot(self, drive='mecanum')
-        drive = 'mecanum'
+        drive = "mecanum"
         us_count = 3
-        self.rs = [Robot(self, drive, name, i * us_count, i) for i, name in enumerate(self.robot_names)]
+        self.rs = [
+            Robot(self, drive, name, i * us_count, i)
+            for i, name in enumerate(self.robot_names)
+        ]
 
         self.candy = Candy(self)
         # self.fl.load_svg(self.r.path, self.gameworld)
@@ -245,7 +274,7 @@ class TestGame(Widget):
         self.robot_controlled = state
         if state == True:
             for r in self.rs:
-                r.add_state('INIT')
+                r.add_state("INIT")
                 r.reset_ultrasounds()
 
     def init_chase_candy_updater(self):
@@ -271,7 +300,7 @@ class TestGame(Widget):
         #       systems = self.gameworld.systems
 
         # self.pprint(sm['cymunk_physics'])
-        physics_system = sm['cymunk_physics']
+        physics_system = sm["cymunk_physics"]
 
         def rfalse(na, nb):
             return False
@@ -279,35 +308,44 @@ class TestGame(Widget):
         # collide_remove_first
 
         # add robots
-        us_detectable = cts['ultrasound_detectable']
-        rob_cts = [cts['robot'] + ct for ct in range(self.num_of_robots)]
+        us_detectable = cts["ultrasound_detectable"]
+        rob_cts = [cts["robot"] + ct for ct in range(self.num_of_robots)]
         us_detectable.extend(rob_cts)
 
         self.begin_ultrasound_callback = {}
         # for us_id in range(self.ultrasound_count):
-        for us_id in cts['ultrasound']:
+        for us_id in cts["ultrasound"]:
             for ignore in range(1024):
                 if type(ignore) is int:  # not list
 
                     # if ignore not in cts['ultrasound_detectable']:
-                    physics_system.add_collision_handler(ignore, us_id, begin_func=rfalse, separate_func=rfalse)
+                    physics_system.add_collision_handler(
+                        ignore, us_id, begin_func=rfalse, separate_func=rfalse
+                    )
 
             for detectable in us_detectable:
-                print('us_id', us_id)
+                print("us_id", us_id)
                 physics_system.add_collision_handler(
                     detectable,
                     us_id,
-                    begin_func=self.return_begin_ultrasound_callback(us_id, True),
-                    separate_func=self.return_begin_ultrasound_callback(us_id, False),
+                    begin_func=self.return_begin_ultrasound_callback(
+                        us_id, True
+                    ),
+                    separate_func=self.return_begin_ultrasound_callback(
+                        us_id, False
+                    ),
                 )
 
         for r_ct in rob_cts:
             physics_system.add_collision_handler(
-                cts['candy'], r_ct, begin_func=self.begin_candy_callback, separate_func=self.begin_candy_callback
+                cts["candy"],
+                r_ct,
+                begin_func=self.begin_candy_callback,
+                separate_func=self.begin_candy_callback,
             )
 
     def candy_caught(self, robot_ent_id):
-        print('candy eaten! by robot:', robot_ent_id)
+        print("candy eaten! by robot:", robot_ent_id)
         self.candy.reset_position()
         self.to_draw_obstacles = 2
 
@@ -355,18 +393,24 @@ class TestGame(Widget):
                 # r = self.get_robot_from_us_id(us_id)
                 r.ultrasound_detection(us_id, ent0, state)
                 ent = self.gameworld.entities[e_id]
-                cat = [cat for cat, id_list in self.entities.items() if e_id in id_list]
+                cat = [
+                    cat
+                    for cat, id_list in self.entities.items()
+                    if e_id in id_list
+                ]
                 # print('detect', cat, e_id)
             return False
 
         ind = 2 * us_id + int(state)
-        self.begin_ultrasound_callback[ind] = types.MethodType(begin_ultrasound_callback, self)
+        self.begin_ultrasound_callback[ind] = types.MethodType(
+            begin_ultrasound_callback, self
+        )
         return self.begin_ultrasound_callback[ind]
         # return begin_ultrasound_callback
 
     def add_entity(self, ent, category):
         # add to entity counter
-        print('added entity', category)
+        print("added entity", category)
         if category not in self.entities.keys():
             self.entities[category] = []
         self.entities.add_item(category, ent)
@@ -387,7 +431,7 @@ class TestGame(Widget):
     def kick_robot(self, r):
         rob_ent = r.ent
         print(rob_ent)
-        p = self.gameworld.system_manager['cymunk_physics']
+        p = self.gameworld.system_manager["cymunk_physics"]
         # self.pprint(dir(p))
 
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
@@ -398,11 +442,17 @@ class TestGame(Widget):
         seq = [-1, 1]
         imp = (choice(seq) * randint(*im), choice(seq) * randint(*im))
         rob_body.apply_impulse(imp)
-        print('impulse', imp)
+        print("impulse", imp)
 
-    def init_entity(self, component_dict, component_order, category='default_category', object_info=None):
+    def init_entity(
+        self,
+        component_dict,
+        component_order,
+        category="default_category",
+        object_info=None,
+    ):
         if object_info is not None:
-            category = object_info.get('category', category)
+            category = object_info.get("category", category)
         else:
             object_info = {}
 
@@ -411,7 +461,7 @@ class TestGame(Widget):
         # add to counter
         self.add_entity(ent, category)
 
-        object_info.update({'ent': ent})
+        object_info.update({"ent": ent})
         entity_info = object_info
 
         # print('@'*42)
@@ -443,7 +493,7 @@ class TestGame(Widget):
                         delete = True
 
             if delete:
-                prinf('Clearing entities of ' + ent_cat)
+                prinf("Clearing entities of " + ent_cat)
                 for ent in ent_list:
                     self.destroy_created_entity(ent, 0)
                 self.entities[ent_cat].clear()
@@ -470,23 +520,25 @@ class TestGame(Widget):
 
     def setup_states(self):
         self.gameworld.add_state(
-            state_name='main',
-            systems_added=['poly_renderer'],
+            state_name="main",
+            systems_added=["poly_renderer"],
             systems_removed=[],
             systems_paused=[],
-            systems_unpaused=['poly_renderer'],
-            screenmanager_screen='main',
+            systems_unpaused=["poly_renderer"],
+            screenmanager_screen="main",
         )
 
     def set_state(self):
-        self.gameworld.state = 'main'
+        self.gameworld.state = "main"
 
     def init_properties_updater(self):
         Clock.schedule_once(self.update_properties)
 
     def update_properties(self, dt):
-        self.app.ultrasound_status = '\n'.join([r.ultrasound_status() for r in self.rs])
-        self.app.robot_states = '\n\n'.join([str(r.states) for r in self.rs])
+        self.app.ultrasound_status = "\n".join(
+            [r.ultrasound_status() for r in self.rs]
+        )
+        self.app.robot_states = "\n\n".join([str(r.states) for r in self.rs])
         #       self.app.robot_score =
         #   self.r.reset_ultrasounds()
         if self.to_draw_obstacles > 0:
@@ -508,11 +560,11 @@ class DebugPanel(Widget):
 
 
 class DalekApp(App):
-    ent_count = StringProperty('...')
-    ultrasound_status = StringProperty('...')
-    robot_states = StringProperty('...')
+    ent_count = StringProperty("...")
+    ultrasound_status = StringProperty("...")
+    robot_states = StringProperty("...")
 
-    info_text = StringProperty('...')
+    info_text = StringProperty("...")
     damping = NumericProperty(0.2)
     # def __init__(self, **kwargs):
     #   super(App, self).__init__(**kwargs)
@@ -524,12 +576,12 @@ class DalekApp(App):
         # Config.set('kivy', 'show_fps', 1)
         # Config.set('kivy', 'desktop', 1)
 
-        Config.set('graphics', 'window_state', 'maximized')
-        Config.set('graphics', 'position', 'custom')
-        Config.set('graphics', 'height', h)
-        Config.set('graphics', 'width', w)
-        Config.set('graphics', 'top', 15)
-        Config.set('graphics', 'left', 4)
+        Config.set("graphics", "window_state", "maximized")
+        Config.set("graphics", "position", "custom")
+        Config.set("graphics", "height", h)
+        Config.set("graphics", "width", w)
+        Config.set("graphics", "top", 15)
+        Config.set("graphics", "left", 4)
         # Config.set('graphics',
         # Config.set('graphics', 'multisamples', 0) # to correct bug from kivy 1.9.1 - https://github.com/kivy/kivy/issues/3576
 
@@ -543,5 +595,5 @@ class DalekApp(App):
         self.root.map.clear_maps()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     DalekApp().run()
