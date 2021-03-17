@@ -415,14 +415,9 @@ class TestGame(Widget):
             self.entities[category] = []
         self.entities.add_item(category, ent)
 
-    def set_robots_rand(self, r):
+    def set_robots_rand(self):
         for r in self.rs:
-            self.set_robot_rand(r)
-
-    def set_robot_rand(self, r):
-        rob_ent = self.r.ent
-        rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
-        rob_body.position = self.candy.get_rand_pos()
+            r.set_random_position()
 
     def kick_robots(self):
         for r in self.rs:

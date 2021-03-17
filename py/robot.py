@@ -300,6 +300,9 @@ class Robot:
             if us.us_id == us_id:
                 return True
 
+    def set_random_position(self):
+        self.entity.cymunk_physics.body.position = self.candy.get_rand_pos()
+
     def chase_candy(self, candy):
         self.candy = candy
 
