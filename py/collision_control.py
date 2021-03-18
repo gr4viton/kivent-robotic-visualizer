@@ -1,9 +1,13 @@
+
+
 class CollisionControl:
+    """Not yet used?!."""
     def __init__(self, ultrasound_count):
 
         self.ultrasound_count = ultrasound_count
 
         self.collision_objects = []
+
         self.add_object_type("wall", 1)
         self.add_object_type("obstacle", 2)
         self.add_object_type("robot", 10)
@@ -11,8 +15,9 @@ class CollisionControl:
         #  self.add_object_type('ultrasound
 
         self.ultrasound_offset = 100
-        us_cts = [self.ultrasound_offset + i for i in range(ultrasound_count)]
-        self.add_category("ultrasound_cone", us_cts, False, False)
+        us_collission_types = [self.ultrasound_offset + i for i in range(ultrasound_count)]
+
+        self.add_category("ultrasound_cone", us_collission_types, False, False)
 
     def get_collision_types(self):
         return {
@@ -27,9 +32,9 @@ class CollisionControl:
         collide=True,
         ultrasound_detectable=True,
     ):
-        for ct in collision_type_list:
+        for collision_type in collision_type_list:
             self.add_object_type(
-                object_type, ct, collide, ultrasound_detectable
+                object_type, collision_type, collide, ultrasound_detectable
             )
 
     def add_object_type(

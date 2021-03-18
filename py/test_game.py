@@ -36,6 +36,7 @@ class TestGame(Widget):
         }
 
         detected_names = ["wall", "obstacle", "obstacle_rect", "robot"]
+
         self.collision_types["ultrasound_detectable"] = list(
             {self.collision_types[name] for name in detected_names}
         )
@@ -112,8 +113,7 @@ class TestGame(Widget):
 
     def init_robots(self):
         self.robots = [
-            self.get_robot(name, i)
-            for i, name in enumerate(self.robot_names)
+            self.get_robot(name, i) for i, name in enumerate(self.robot_names)
         ]
 
         self.candy = Candy(self)
@@ -130,7 +130,13 @@ class TestGame(Widget):
     def get_robot(self, name, i):
         drive = "mecanum"
         us_count = 3
-        return Robot(root=self, drive=drive, robot_name=name, us_id_offset=i * us_count, robot_number=i)
+        return Robot(
+            root=self,
+            drive=drive,
+            robot_name=name,
+            us_id_offset=i * us_count,
+            robot_number=i,
+        )
 
     def toggle_robot_control(self, state):
         self.robot_controlled = state
@@ -158,18 +164,27 @@ class TestGame(Widget):
         self.asteroids.draw_asteroids()
 
     def setup_collision_callbacks(self):
+        """Setup the correct collisions for the cymunk physics system manager.
+
+        use the physics_system.add_collision_handler
+        to define between which collision_types the collission should happen and between which not
+        """
 
         physics_system = self.gameworld.system_manager["cymunk_physics"]
 
-        def return_false(na, nb):
+        def ignore_collision(na, nb):
+            """Returns false to indicate ignoring the collision."""
             return False
 
         # collide_remove_first
 
         # add robots
         us_detectable = self.collision_types["ultrasound_detectable"]
-        rob_cts = [self.collision_types["robot"] + ct for ct in range(self.num_of_robots)]
-        us_detectable.extend(rob_cts)
+        rob_collision_types = [
+            self.collision_types["robot"] + ct
+            for ct in range(self.num_of_robots)
+        ]
+        us_detectable.extend(rob_collision_types)
 
         self.begin_ultrasound_callback = {}
         # for us_id in range(self.ultrasound_count):
@@ -179,7 +194,10 @@ class TestGame(Widget):
 
                     # if ignore not in self.collision_types['ultrasound_detectable']:
                     physics_system.add_collision_handler(
-                        ignore, us_id, begin_func=return_false, separate_func=return_false
+                        ignore,
+                        us_id,
+                        begin_func=ignore_collision,
+                        separate_func=ignore_collision,
                     )
 
             for detectable in us_detectable:
@@ -195,7 +213,10 @@ class TestGame(Widget):
                     ),
                 )
 
-        for r_ct in rob_cts:
+        for r_ct in rob_collision_types:
+            from pudb.remote import set_trace
+
+            set_trace(term_size=(238, 54), host="0.0.0.0", port=6900)  # noqa
             physics_system.add_collision_handler(
                 self.collision_types["candy"],
                 r_ct,
