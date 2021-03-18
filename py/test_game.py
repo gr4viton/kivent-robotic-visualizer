@@ -11,7 +11,8 @@ from kivy.uix.widget import Widget
 from file_loader import FileLoader
 from entities import Entities
 
-from robot import Robot, Candy
+from robot import Robot
+from candy import Candy
 from asteroids import Asteroids
 
 from surface import Map2D
@@ -124,10 +125,13 @@ class TestGame(Widget):
 
     def toggle_robot_control(self, state):
         self.robot_controlled = state
-        if state == True:
-            for r in self.robots:
-                r.add_state("INIT")
-                r.reset_ultrasounds()
+
+        if not state:
+            return
+
+        for r in self.robots:
+            r.add_state("INIT")
+            r.reset_ultrasounds()
 
     def init_chase_candy_updater(self):
         for r in self.robots:
@@ -278,8 +282,6 @@ class TestGame(Widget):
     def kick_robot(self, r):
         rob_ent = r.ent
         print(rob_ent)
-        p = self.gameworld.system_manager["cymunk_physics"]
-        # self.pprint(dir(p))
 
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
         # rob_body = rob_ent.cymunk_physics.body
