@@ -284,8 +284,6 @@ class TestGame(Widget):
         print(rob_ent)
 
         rob_body = self.gameworld.entities[rob_ent].cymunk_physics.body
-        # rob_body = rob_ent.cymunk_physics.body
-        print(dir(rob_body))
 
         im = (10000, 10000)
         seq = [-1, 1]
