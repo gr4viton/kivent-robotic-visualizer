@@ -1,11 +1,14 @@
 # TODO
 
-Ideas to check
+Ideas and issues
 
 ## Check packages
 ```
 svgpathtools
 ```
+
+## Dynamically add and remove robots
+via UI
 
 ## Try to create own renderer
 https://github.com/kivy/kivent/wiki/Getting-Started-6:-Creating-a-Renderer

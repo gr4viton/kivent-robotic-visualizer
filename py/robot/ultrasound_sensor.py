@@ -53,6 +53,3 @@ class UltrasoundSensor:
 
     ## rend_model.set_textured_rectangle(txu)
     # rend_model.flip_textured_rectangle_horizontally()
-
-
-
