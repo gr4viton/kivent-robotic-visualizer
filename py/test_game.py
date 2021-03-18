@@ -97,7 +97,7 @@ class TestGame(Widget):
 
     def init_physicals(self):
         #        self._entities = {}
-        self.robot_names = ["dalek", "drWho"]
+        self.robot_names = ["dalek", "drWho", "k9", "kachna"]
         self.num_of_robots = len(self.robot_names)
 
         self.setup_collision_callbacks()
