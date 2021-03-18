@@ -111,17 +111,26 @@ class TestGame(Widget):
         self.init_robots()
 
     def init_robots(self):
-
-        # self.robot = Robot(self, drive='mecanum')
-        drive = "mecanum"
-        us_count = 3
         self.robots = [
-            Robot(self, drive, name, i * us_count, i)
+            self.get_robot(name, i)
             for i, name in enumerate(self.robot_names)
         ]
 
         self.candy = Candy(self)
-        # self.fl.load_svg(self.robot.path, self.gameworld)
+
+    def unused_load_robot_svg(self, robot):
+        self.fl.load_svg(robot.path, self.gameworld)
+
+    def add_robot(self):
+        i = len(self.robots)
+        name = f"robot_{i}"
+        robot = self.get_robot(name, i)
+        self.robots.append(robot)
+
+    def get_robot(self, name, i):
+        drive = "mecanum"
+        us_count = 3
+        return Robot(root=self, drive=drive, robot_name=name, us_id_offset=i * us_count, robot_number=i)
 
     def toggle_robot_control(self, state):
         self.robot_controlled = state
@@ -149,34 +158,28 @@ class TestGame(Widget):
         self.asteroids.draw_asteroids()
 
     def setup_collision_callbacks(self):
-        cts = self.collision_types
 
-        sm = self.gameworld.system_manager
-        #       self.pprint(dir(sm))
-        #       systems = self.gameworld.systems
+        physics_system = self.gameworld.system_manager["cymunk_physics"]
 
-        # self.pprint(sm['cymunk_physics'])
-        physics_system = sm["cymunk_physics"]
-
-        def rfalse(na, nb):
+        def return_false(na, nb):
             return False
 
         # collide_remove_first
 
         # add robots
-        us_detectable = cts["ultrasound_detectable"]
-        rob_cts = [cts["robot"] + ct for ct in range(self.num_of_robots)]
+        us_detectable = self.collision_types["ultrasound_detectable"]
+        rob_cts = [self.collision_types["robot"] + ct for ct in range(self.num_of_robots)]
         us_detectable.extend(rob_cts)
 
         self.begin_ultrasound_callback = {}
         # for us_id in range(self.ultrasound_count):
-        for us_id in cts["ultrasound"]:
+        for us_id in self.collision_types["ultrasound"]:
             for ignore in range(1024):
                 if type(ignore) is int:  # not list
 
-                    # if ignore not in cts['ultrasound_detectable']:
+                    # if ignore not in self.collision_types['ultrasound_detectable']:
                     physics_system.add_collision_handler(
-                        ignore, us_id, begin_func=rfalse, separate_func=rfalse
+                        ignore, us_id, begin_func=return_false, separate_func=return_false
                     )
 
             for detectable in us_detectable:
@@ -194,7 +197,7 @@ class TestGame(Widget):
 
         for r_ct in rob_cts:
             physics_system.add_collision_handler(
-                cts["candy"],
+                self.collision_types["candy"],
                 r_ct,
                 begin_func=self.begin_candy_callback,
                 separate_func=self.begin_candy_callback,
