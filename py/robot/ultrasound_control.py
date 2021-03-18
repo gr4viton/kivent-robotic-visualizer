@@ -1,6 +1,10 @@
 
 
 class RobotMixinUltrasoundControl:
+
+    def init_ultrasound_control(self):
+        pass
+
     #   @property
     #  def ultrasounds(self):
 

@@ -1,9 +1,8 @@
-from cymunk import Vec2d
 from random import randint
 from math import radians, sin, cos
 import svgwrite as svg
 
-from settings import svg_folder_path
+# from settings import svg_folder_path
 
 import json
 
@@ -26,14 +25,15 @@ class Robot(RobotMixinUltrasoundControl, RobotMixinChaseCandyControl):
     ):
         self.root = root
         self.robot_name = robot_name
-        self.us_id_offset = us_id_offset
+
         self.robot_number = robot_number
 
         self.baseProfile = "tiny"  # 'full'
-        self.__svg_dir__ = "../assets/objects/svg/"
+
         self.ents = {category: [] for category in Robot.cats}
 
         self.ultrasounds = {}
+        self.us_id_offset = us_id_offset
 
         self.cts = root.collision_types
         self.drive = drive
@@ -46,7 +46,6 @@ class Robot(RobotMixinUltrasoundControl, RobotMixinChaseCandyControl):
             self.control = RobotMecanumControl(self.root, self)
 
         self.init_chase_candy_control()
-        self.init_ultrasound_control()
 
     def set_random_position(self):
         self.entity.cymunk_physics.body.position = self.candy.get_rand_pos()
@@ -90,9 +89,6 @@ class Robot(RobotMixinUltrasoundControl, RobotMixinChaseCandyControl):
         # self.entities[category].append(ent)
 
     def create_robot(self):
-        #      self.color = '#FF0000'
-        #       self.stroke_color = '#000000'
-        #        self.path = svg_folder_path + 'robot.svg'
 
         w, h = self.root.field_size
 
@@ -174,7 +170,7 @@ class Robot(RobotMixinUltrasoundControl, RobotMixinChaseCandyControl):
         sensor_width = 10
         for i in range(count_ultrasounds):
             # to center it
-            shift_angle = count_ultrasounds / 2 * open_angle  # + radians(180)
+            shift_angle = count_ultrasounds / 2 * open_angle
             # cone edges
             edge_angles = (
                 i * open_angle - shift_angle,

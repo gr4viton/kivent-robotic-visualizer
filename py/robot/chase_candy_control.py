@@ -1,3 +1,4 @@
+from cymunk import Vec2d
 from math import radians, sqrt  # , degrees
 
 
