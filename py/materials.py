@@ -3,7 +3,6 @@ from typing import List
 from pydantic import BaseModel, Field
 
 
-
 class Material(BaseModel):
     code: str = Field(description="snake_case code of the thing")
 
@@ -44,65 +43,100 @@ class Materials:
         reflects_light=True,
     )
 
-class ThingType:
-    code: str
-    material: Material
-    collision_id: int
+# class ThingTypes:
+#     wall = ThingType(
+#         code = "wall",
+#         collision_group = 1
+#         material = Materials.solid
+#     )
+
+class CollisionGroup:
+    id: int
+#    thing_class: Thing
+    thing_class = None
 
 
 class ThingParameters:
     material: Material
-    collision_id: int
+    collision_group: CollisionGroup
+
+class Thing:
+    code: str
+    # thing_parameters: ThingParameters
+    material: Material
+    collision_group: CollisionGroup
 
 
-# class ThingTypes:
-#     wall = ThingType(
-#         code = "wall",
-#         collision_id = 1
-#         material = Materials.solid
-#     )
 
-class CollisionIds:
+class CollisionGroups:
     last_id = 0
 
-    ids = []
+    collision_groups = {}
 
     @classmethod
-    def get_free_id(cls):
-        free_id = cls.last_id
+    # def get_new_group(cls, thing_class):
+    def get_new_group(cls, thing_class=None):
+        # if not isinstance(thing_class, Thing):
+        #     raise TypeError("You need to pass Thing class when requesting a free collision_group.")
+        collision_group_exists = cls.collision_groups.get(thing_class) is not None
+        # if collision_group_exists:
+
+
+        # new_group = CollisionGroup(id=cls.last_id, thing_class=thing_class)
+        new_group = "Fungis"
         cls.last_id += 1
-        return free_id
+        return new_group
 
 
-class Wall(ThingType):
-    code = "wall"
-    material = Materials.solid
-    collision_id = CollisionIds.get_free_id()
+class Wall(Thing):
+    _code = "wall"
+    _material = Materials.solid,
+    _collision_group = CollisionGroups.get_new_group()
+
     def __init__(self):
+        # super().__init__(code="wall", material=self._material, collision_group=self._collision_group)
+        pass
+
+    def init_entities():
         # create entities
+        pass
+
+    def init_collisions():
         # setup collisions
         pass
     # def on_click()
 
 
-class AirDetectionZone(ThingType):
+class DetectionZone(Thing):
     code = "air_detection_zone"
-    material = Materials.air
-    collision_id = CollisionIds.get_free_id()
+    # collision_group = CollisionGroups.get_new_group() # each detection_zone has to have its own new collision group for the detection to work
+    collision_group = CollisionGroups.get_new_group()
 
-    def __init__(self, detectable_materials):
+    @property
+    def collision_id(self):
+        return collision_group.id  # IDK
 
+    def __init__(self, material, detectable_materials):
+        collision_group = CollisionGroups.get_new_group(self.__class__)
+        super().__init__(code="wall", material=self._material, collision_group=collision_group)
+
+        # rather detectable_material_properties
+        # - reflect_sound = true
+
+        # super().__init__(self._code="wall", thing_parameters=self._thing_parameters)
         # create entities
         # setup collisions
         # - based on the material
         # - based on the detectable_materials
         pass
 
+
 def main():
     thing = Wall()
     thing2 = Wall()
-    print(Wall.collision_id)
-    print(AirDetectionZone.collision_id)
+    # print(Wall.collision_group)
+    # print(AirDetectionZone.collision_group)
+    # ultrasound_zone = DetectionZone(material=Material.air, detectable_materials=[])
     # on click
     # if isinstance(thing, Wall):
 
