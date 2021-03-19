@@ -15,38 +15,38 @@ class CollisionControl:
         #  self.add_object_type('ultrasound
 
         self.ultrasound_offset = 100
-        us_collission_types = [self.ultrasound_offset + i for i in range(ultrasound_count)]
+        us_collision_ids = [self.ultrasound_offset + i for i in range(ultrasound_count)]
 
-        self.add_category("ultrasound_cone", us_collission_types, False, False)
+        self.add_category("ultrasound_cone", us_collision_ids, False, False)
 
-    def get_collision_types(self):
+    def get_collision_ids(self):
         return {
-            o.name: o.collision_type
+            o.name: o.collision_id
             for o in self.collide_control.collision_objects
         }
 
     def add_category(
         self,
         object_type,
-        collision_type_list,
+        collision_id_list,
         collide=True,
         ultrasound_detectable=True,
     ):
-        for collision_type in collision_type_list:
+        for collision_id in collision_id_list:
             self.add_object_type(
-                object_type, collision_type, collide, ultrasound_detectable
+                object_type, collision_id, collide, ultrasound_detectable
             )
 
     def add_object_type(
         self,
         object_type,
-        collision_type,
+        collision_id,
         collide=True,
         ultrasound_detectable=True,
     ):
         col_obj = {
             "object_type": object_type,
-            "collision_type": collision_type,
+            "collision_id": collision_id,
             "collide": collide,
             "ultrasound_detectable": ultrasound_detectable,
         }

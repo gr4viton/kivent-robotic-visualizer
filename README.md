@@ -9,7 +9,7 @@ pip install kivy
 
 # kivent-robotic-visualiser dependencies install
 # nope: pip install -r scripts/requirements.txt
-pip install -r svgwrite
+pip install -r svgwrite pydantic
 pip install -r pudb  # for debugging
 
 # kivent install

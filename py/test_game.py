@@ -19,12 +19,12 @@ from surface import Map2D
 
 
 class TestGame(Widget):
-    def init_collision_types(self):
+    def init_collision_ids(self):
         self.ultrasound_count = 10
 
         # self.collide_control = CollideControl(self.ultrasound_count)
-        # self.collision_types = self.collide_control.collision_types
-        self.collision_types = {
+        # self.collision_ids = self.collide_control.collision_ids
+        self.collision_ids = {
             "wall": 1,
             "obstacle_rect": 2,
             "obstacle": 3,
@@ -37,19 +37,19 @@ class TestGame(Widget):
 
         detected_names = ["wall", "obstacle", "obstacle_rect", "robot"]
 
-        self.collision_types["ultrasound_detectable"] = list(
-            {self.collision_types[name] for name in detected_names}
+        self.collision_ids["ultrasound_detectable"] = list(
+            {self.collision_ids[name] for name in detected_names}
         )
         print("ultrasound_detectable")
-        print(self.collision_types["ultrasound_detectable"])
+        print(self.collision_ids["ultrasound_detectable"])
 
         # ignore touch of user
         self.ignore_groups = []
-        self.ignore_groups.extend(self.collision_types["ultrasound"])
-        # [ self.ignore_groups.append(self.collision_types[key]) for key in ['robot']]
+        self.ignore_groups.extend(self.collision_ids["ultrasound"])
+        # [ self.ignore_groups.append(self.collision_ids[key]) for key in ['robot']]
 
     def __init__(self, **kwargs):
-        self.init_collision_types()
+        self.init_collision_ids()
         super(TestGame, self).__init__(**kwargs)
 
         self.gameworld.init_gameworld(
@@ -167,7 +167,11 @@ class TestGame(Widget):
         """Setup the correct collisions for the cymunk physics system manager.
 
         use the physics_system.add_collision_handler
-        to define between which collision_types the collission should happen and between which not
+        to define between which collision_ids the collision should happen and between which not
+
+        Following handler functions are passed
+        - begin_func - called once on collision begin
+        - separate_func - called once on collision end
         """
 
         physics_system = self.gameworld.system_manager["cymunk_physics"]
@@ -179,27 +183,30 @@ class TestGame(Widget):
         # collide_remove_first
 
         # add robots
-        us_detectable = self.collision_types["ultrasound_detectable"]
-        rob_collision_types = [
-            self.collision_types["robot"] + ct
+        us_detectable = self.collision_ids["ultrasound_detectable"]
+        rob_collision_ids = [
+            self.collision_ids["robot"] + ct
             for ct in range(self.num_of_robots)
         ]
-        us_detectable.extend(rob_collision_types)
+        us_detectable.extend(rob_collision_ids)
 
         self.begin_ultrasound_callback = {}
-        # for us_id in range(self.ultrasound_count):
-        for us_id in self.collision_types["ultrasound"]:
-            for ignore in range(1024):
-                if type(ignore) is int:  # not list
 
-                    # if ignore not in self.collision_types['ultrasound_detectable']:
-                    physics_system.add_collision_handler(
-                        ignore,
-                        us_id,
-                        begin_func=ignore_collision,
-                        separate_func=ignore_collision,
-                    )
+        # ignore_collision of ultrasound triangle with 0-1024 collision_ids
+        # to enable the triangles to clip through other objects
+        # ! this should be done on robot / on ultrasound creation
+        for us_id in self.collision_ids["ultrasound"]:
+            for index_id in range(1024):
+                physics_system.add_collision_handler(
+                    index_id,
+                    us_id,
+                    begin_func=ignore_collision,
+                    separate_func=ignore_collision,
+                )
 
+        # add ultrasound triangles object detection via collision
+        # ! this should be done on robot / on ultrasound creation
+        for us_id in self.collision_ids["ultrasound"]:
             for detectable in us_detectable:
                 print("us_id", us_id)
                 physics_system.add_collision_handler(
@@ -213,12 +220,12 @@ class TestGame(Widget):
                     ),
                 )
 
-        for r_ct in rob_collision_types:
+        for r_ct in rob_collision_ids:
             from pudb.remote import set_trace
 
             set_trace(term_size=(238, 54), host="0.0.0.0", port=6900)  # noqa
             physics_system.add_collision_handler(
-                self.collision_types["candy"],
+                self.collision_ids["candy"],
                 r_ct,
                 begin_func=self.begin_candy_callback,
                 separate_func=self.begin_candy_callback,

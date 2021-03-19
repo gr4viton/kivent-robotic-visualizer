@@ -16,6 +16,7 @@
 - Render OBJ model
 - Render OBJ model with MTL
 - Use logger instead of print
+- On right click create edit window / floating or let it be permanent - possibly allow multiple edit windows to be opened at the same time
 
 
 ## 2021-03-18
